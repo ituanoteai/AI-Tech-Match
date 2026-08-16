@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🏹 AI Tech Match: AI ในชีวิตประจำวัน (AR Archery)</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mali:wght@500;700;800&family=Orbitron:wght@700;900&family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+  <style>
+    :root {
+      --bg-primary: #070b1d;
+      --surface: rgba(11, 20, 53, 0.85);
+      --purple: #6c3fa0;
+      --blue: #00d4ff;
+      --gold: #ffd700;
+      --neon-green: #00ff88;
+      --red: #ff4444;
+      --white: #f8f6ec;
+      --white-dim: #c7d0f2;
+      --font-display: 'Orbitron', 'Mali', sans-serif;
+      --font-body: 'Prompt', 'Mali', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+    html, body { width: 100vw; height: 100vh; overflow: hidden; background: var(--bg-primary); font-family: var(--font-body); color: var(--white); }
+
+    #gameWrapper { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+    #gameCanvas { display: block; width: 100%; height: 100%; touch-action: none; }
+    #webcam { display: none; }
+
+    .glass-card {
+      background: var(--surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 2px solid rgba(0, 212, 255, 0.35);
+      border-radius: 24px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 212, 255, 0.2);
+    }
+
+    .screen-overlay {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; z-index: 50;
+      background: radial-gradient(circle at center, rgba(16, 27, 66, 0.88), rgba(7, 11, 29, 0.96));
+      backdrop-filter: blur(10px); transition: opacity 0.3s ease;
+    }
+    .screen-overlay.hidden { display: none !important; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 14px 36px; font-family: var(--font-display); font-size: 1.1rem; font-weight: 700;
+      border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 20px; cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); outline: none;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+    }
+    .btn:hover { transform: translateY(-3px) scale(1.03); filter: brightness(1.15); }
+    .btn:active { transform: translateY(2px) scale(0.98); }
+    .btn-gold { background: linear-gradient(135deg, #ff7a47, #ffd700); color: #1a0f00; border-color: #fff6a8; }
+    .btn-primary { background: linear-gradient(135deg, #1f9eea, #7044dd); color: #fff; border-color: #83e8ff; }
+    .btn-secondary { background: rgba(39, 53, 108, 0.6); color: #e5eaff; border-color: rgba(177, 191, 244, 0.4); }
+    .btn-sm { padding: 8px 20px; font-size: 0.9rem; border-radius: 12px; }
+
+    .game-title {
+      font-size: clamp(2.2rem, 5vw, 3.8rem); font-weight: 900; text-align: center;
+      background: linear-gradient(135deg, #fff8da 0%, var(--gold) 40%, var(--blue) 100%);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 25px rgba(0, 212, 255, 0.4)); margin-bottom: 6px;
+    }
+    .game-subtitle { color: var(--white-dim); font-size: 1rem; margin-bottom: 24px; text-align: center; }
+
+    .creator-tag {
+      position: absolute; bottom: 20px; font-size: 0.85rem; color: var(--gold);
+      background: rgba(108, 63, 160, 0.3); border: 1px solid rgba(255, 215, 0, 0.4);
+      padding: 6px 18px; border-radius: 30px;
+    }
+
+    .htp-step { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; font-size: 0.95rem; }
+    .htp-num {
+      flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
+      background: linear-gradient(135deg, var(--gold), #c98721); color: #111; font-weight: bold;
+    }
+
+    .result-card-epic {
+      text-align: center; padding: 30px 38px; width: min(540px, 94vw);
+      background: linear-gradient(145deg, rgba(20, 35, 85, 0.94), rgba(7, 13, 35, 0.96));
+      border: 3px solid #ffd700;
+      box-shadow: 0 0 50px rgba(255, 215, 0, 0.5), inset 0 0 30px rgba(0, 212, 255, 0.3);
+      animation: victoryPulse 2.5s infinite alternate;
+    }
+    @keyframes victoryPulse {
+      0% { transform: scale(1); box-shadow: 0 0 40px rgba(255, 215, 0, 0.4); }
+      100% { transform: scale(1.02); box-shadow: 0 0 70px rgba(255, 215, 0, 0.8), 0 0 100px rgba(0, 212, 255, 0.4); }
+    }
+    .result-rank {
+      font-size: 4.5rem; font-weight: 900; font-family: var(--font-display);
+      background: linear-gradient(135deg, #fff, var(--gold), #ff7a47);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 25px var(--gold)); margin: 2px 0;
+      animation: rankBounce 1.2s infinite alternate ease-in-out;
+    }
+    @keyframes rankBounce {
+      from { transform: translateY(0); }
+      to { transform: translateY(-6px); }
+    }
+
+    .stat-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 14px; border-radius: 10px; background: rgba(255, 255, 255, 0.04);
+      margin-bottom: 6px; font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="gameWrapper">
+    <canvas id="gameCanvas"></canvas>
+    <video id="webcam" playsinline autoplay></video>
+
+    <!-- 1. MAIN MENU SCREEN -->
+    <div id="menuScreen" class="screen-overlay">
+      <div style="font-size: 4rem; animation: float 3s ease-in-out infinite;">🏹 🤖</div>
+      <h1 class="game-title">AI Tech Match</h1>
+      <p class="game-subtitle">ภารกิจยิงธนูจำแนก "AI ในชีวิตประจำวัน" (คะแนนเต็ม 1,000)</p>
+
+      <div style="display:flex; flex-direction:column; gap:14px; width:min(320px, 85vw);">
+        <button class="btn btn-gold" id="btnStartGame">🎯 เริ่มภารกิจ (กล้อง AR)</button>
+        <button class="btn btn-primary" id="btnMousePlay">🖱️ เล่นด้วยเมาส์</button>
+        <button class="btn btn-secondary" id="btnHowToPlay">📖 วิธีการเล่น</button>
+      </div>
+
+      <div class="creator-tag">By นายพิรสิฏฐ์ พีรภัคโสภณ</div>
+    </div>
+
+    <!-- 2. HOW TO PLAY MODAL -->
+    <div id="howToPlayModal" class="screen-overlay hidden">
+      <div class="glass-card" style="padding:32px; max-width:540px; width:90%; position:relative;">
+        <h2 style="color:var(--gold); font-size:1.5rem; text-align:center; margin-bottom:18px;">🏹 วิธียิงธนู AR ที่ถูกต้อง</h2>
+        <div class="htp-step"><div class="htp-num">1</div><div><b>มือซ้าย (ถือคันธนู):</b> ยื่นแขนไปด้านหน้าทางช้อยส์ขวามือ คันธนูจะลอยอยู่ที่มือนี้</div></div>
+        <div class="htp-step"><div class="htp-num">2</div><div><b>มือขวา (ง้างสายธนู):</b> ✊ <b>กำมือขวา</b> แล้วดึงถอยหลังเข้าหาตัว สายธนูสีแดงจะถูกดึงง้างตามระยะ</div></div>
+        <div class="htp-step"><div class="htp-num">3</div><div><b>ปล่อยยิง:</b> 🖐️ <b>แบมือขวาออก</b> ลูกธนูจะพุ่งตรงไปยังเป้าหมายทันที! (ต้องง้าง > 35%)</div></div>
+        <div class="htp-step"><div class="htp-num">4</div><div><b>เกณฑ์คะแนน:</b> ตอบถูก = 50 คะแนน + โบนัสความเร็ว = สูงสุด 50 คะแนน (เต็ม 1,000)</div></div>
+        <div style="text-align:center; margin-top:20px;">
+          <button class="btn btn-gold btn-sm" id="btnCloseHTP">เข้าใจแล้ว ลุยเลย!</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. LOADING OVERLAY -->
+    <div id="loadingOverlay" class="screen-overlay hidden">
+      <div style="font-size:3rem; animation:spin 1s linear infinite;">⏳</div>
+      <h2 style="color:var(--blue); font-size:1.3rem; margin-top:14px;" id="loadingText">กำลังเปิดระบบกล้อง AI...</h2>
+      <p style="color:var(--white-dim); font-size:0.85rem; margin-top:6px;">กรุณาอนุญาตการเข้าถึงกล้องเว็บแคม</p>
+      <button class="btn btn-secondary btn-sm" id="btnForceMouse" style="margin-top:18px;">สลับไปเล่นด้วยเมาส์</button>
+    </div>
+
+    <!-- 4. EPIC RESULT OVERLAY -->
+    <div id="resultOverlay" class="screen-overlay hidden">
+      <div class="glass-card result-card-epic">
+        <div style="font-size: 2.5rem;">👑 🏆 🎊</div>
+        <h2 style="color:var(--gold); font-size:1.5rem; font-weight:900; text-shadow:0 0 20px rgba(255,215,0,0.6);">
+          สรุปผลการทดสอบ AI Tech Match
+        </h2>
+        <div class="result-rank" id="resultRank">S</div>
+
+        <div style="background:rgba(0,0,0,0.38); border:1px solid rgba(255,215,0,0.25); border-radius:18px; padding:12px; margin:10px 0; text-align:left;">
+          <div class="stat-row" style="background:rgba(0,255,136,0.12); border-left:4px solid var(--neon-green);">
+            <span style="font-weight:bold; color:#fff;">คะแนนรวมสุทธิ:</span>
+            <span style="font-size:1.25rem; font-weight:900; color:var(--neon-green);" id="resScore">0 / 1000</span>
+          </div>
+          <div class="stat-row">
+            <span style="color:var(--white-dim);">🎯 ตอบถูกต้อง:</span>
+            <span style="font-weight:bold; color:var(--blue);" id="resAcc">0%</span>
+          </div>
+          <div class="stat-row">
+            <span style="color:var(--white-dim);">📌 คะแนนพื้นฐาน (50 x ข้อ):</span>
+            <span style="font-weight:bold; color:var(--blue);" id="resBaseScore">0 / 500</span>
+          </div>
+          <div class="stat-row">
+            <span style="color:var(--white-dim);">⚡ โบนัสความเร็ว (Speed Bonus):</span>
+            <span style="font-weight:bold; color:var(--gold);" id="resSpeedScore">0 / 500</span>
+          </div>
+          <div class="stat-row" style="border-top:1px solid rgba(255,255,255,0.1); margin-top:6px; padding-top:6px;">
+            <span style="color:var(--white-dim);">⏱️ เวลารวมที่ใช้จริง:</span>
+            <span style="font-weight:bold; color:#ff7a47;" id="resTotalTime">0.0 วินาที</span>
+          </div>
+          <div class="stat-row">
+            <span style="color:var(--white-dim);">📊 ความเร็วเฉลี่ย:</span>
+            <span style="font-weight:bold; color:var(--white);" id="resAvgTime">0.0 วิ / ข้อ</span>
+          </div>
+        </div>
+
+        <button class="btn btn-gold btn-sm" id="btnRestart" style="margin-top:6px;">🔄 เล่นรอบถัดไป</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================
+       1. QUESTION BANK: 10 สถานการณ์
+       ========================================================== */
+    const AI_QUESTIONS_MASTER = [
+      {
+        title: "รถยนต์ไร้คนขับ (Tesla Autopilot)",
+        category: "Computer Vision & Deep Learning",
+        scenario: "รถยนต์ตรวจจับคนข้ามถนน ป้ายจราจร และควบคุมพวงมาลัยหลบหลีกอัตโนมัติ",
+        emoji: "🚗⚡",
+        correctText: "✅ ใช้เทคโนโลยี AI",
+        wrongText: "❌ ไม่ใช่เทคโนโลยี AI"
+      },
+      {
+        title: "แอป Google Translate (สแกนป้ายแปลภาษา)",
+        category: "NLP & Computer Vision",
+        scenario: "ใช้กล้องมือถือส่องป้ายภาษาต่างประเทศ แล้วตัวหนังสือเปลี่ยนเป็นภาษาไทยทันทีบนหน้าจอ",
+        emoji: "📷🌐",
+        correctText: "✅ ใช้เทคโนโลยี AI",
+        wrongText: "❌ ไม่ใช่เทคโนโลยี AI"
+      },
+      {
+        title: "ระบบ Face ID สแกนใบหน้าปลดล็อกมือถือ",
+        category: "Biometric Computer Vision",
+        scenario: "สแกนโครงหน้า 3 มิติเพื่อยืนยันตัวตน แม้สวมแว่นตาหรืออยู่ในที่มืด",
+        emoji: "📱👤",
+        correctText: "✅ ใช้เทคโนโลยี AI",
+        wrongText: "❌ ไม่ใช่เทคโนโลยี AI"
+      },
+      {
+        title: "การแนะนำภาพยนตร์บน Netflix / วิดีโอบน YouTube",
+        category: "Recommendation System",
+        scenario: "ระบบจัดหน้าฟีดแนะนำหนังและเพลงใหม่ๆ ตรงตามแนวที่คุณชอบดูเป็นประจำ",
+        emoji: "🎬🍿",
+        correctText: "✅ ใช้เทคโนโลยี AI",
+        wrongText: "❌ ไม่ใช่เทคโนโลยี AI"
+      },
+      {
+        title: "เครื่องคิดเลขธรรมดา (กดปุ่มบวกลบคูณหาร)",
+        category: "Standard Hardware Logic",
+        scenario: "กดปุ่ม 5 + 5 แล้วหน้าจอดิจิทัลแสดงผลลัพธ์เป็น 10 ทันที",
+        emoji: "🔢🖩",
+        correctText: "❌ ไม่ใช่เทคโนโลยี AI",
+        wrongText: "✅ ใช้เทคโนโลยี AI"
+      },
+      {
+        title: "ระบบคัดกรองสแปมอีเมล (Spam Filter) ใน Gmail",
+        category: "Natural Language Processing (NLP)",
+        scenario: "ตรวจจับและแยกจดหมายหลอกลวง/โฆษณาอันตรายเข้าถังขยะอัตโนมัติ",
+        emoji: "📧🛡️",
+        correctText: "✅ ใช้เทคโนโลยี AI",
+        wrongText: "❌ ไม่ใช่เทคโนโลยี AI"
+      },
+      {
+        title: "ไฟฉายหลอด LED ส่องสว่าง",
+        category: "Basic Electricity",
+        scenario: "เลื่อนสวิตช์เปิด-ปิด แล้วหลอดไฟติดให้แสงสว่าง",
+        emoji: "🔦💡",
+        correctText: "❌ ไม่ใช่เทคโนโลยี AI",
+        wrongText: "✅ ใช้เทคโนโลยี AI"
+      },
+      {
+        title: "แชตบอต ChatGPT / Gemini โต้ตอบตอบคำถาม",
+        category: "Generative AI & LLM",
+        scenario: "สามารถคุยตอบคำถาม เขียนบทความ และแต่งกลอนภาษาไทยได้อย่างลื่นไหล",
+        emoji: "🤖💬",
+        correctText: "✅ ใช้เทคโนโลยี AI",
+        wrongText: "❌ ไม่ใช่เทคโนโลยี AI"
+      },
+      {
+        title: "เครื่องสแกนบาร์โค้ดสินค้าใน 7-Eleven",
+        category: "Optical Barcode Scanner",
+        scenario: "ยิงเลเซอร์สีแดงทาบลงบนแถบเส้นบาร์โค้ด แล้วรหัสตัวเลขส่งเข้าเครื่องคิดเงิน",
+        emoji: "🏪🏷️",
+        correctText: "❌ ไม่ใช่เทคโนโลยี AI",
+        wrongText: "✅ ใช้เทคโนโลยี AI"
+      },
+      {
+        title: "ระบบโฟกัสและจับใบหน้าอัตโนมัติในกล้องสมาร์ตโฟน",
+        category: "Computer Vision & AI Portrait",
+        scenario: "ยกกล้องมือถือขึ้นมาแล้วมีกรอบสีเหลืองติดตามใบหน้าและปรับแสงให้อัตโนมัติ",
+        emoji: "📸✨",
+        correctText: "✅ ใช้เทคโนโลยี AI",
+        wrongText: "❌ ไม่ใช่เทคโนโลยี AI"
+      }
+    ];
+
+    /* ==========================================================
+       2. AUDIO & SPEECH ENGINE (Safe Non-Zero Web Audio)
+       ========================================================== */
+    class AudioEngine {
+      constructor() { this.ctx = null; }
+      init() {
+        try {
+          if (!this.ctx) {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          if (this.ctx.state === 'suspended') this.ctx.resume();
+        } catch(e){}
+      }
+      playArrowDraw() {
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(80, this.ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(240, this.ctx.currentTime + 0.25);
+          gain.gain.setValueAtTime(0.06, this.ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + 0.25);
+          osc.connect(gain).connect(this.ctx.destination);
+          osc.start(); osc.stop(this.ctx.currentTime + 0.25);
+        } catch(e){}
+      }
+      playArrowRelease() {
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(70, this.ctx.currentTime + 0.25);
+          gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.25);
+          osc.connect(gain).connect(this.ctx.destination);
+          osc.start(); osc.stop(this.ctx.currentTime + 0.25);
+        } catch(e){}
+      }
+      playCorrectHit() {
+        if (!this.ctx) return;
+        try {
+          const notes = [523.25, 659.25, 783.99, 1046.50];
+          notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            const t = this.ctx.currentTime + idx * 0.07;
+            gain.gain.setValueAtTime(0.001, t);
+            gain.gain.linearRampToValueAtTime(0.25, t + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+            osc.connect(gain).connect(this.ctx.destination);
+            osc.start(t); osc.stop(t + 0.35);
+          });
+        } catch(e){}
+      }
+      playWrongHit() {
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(60, this.ctx.currentTime + 0.3);
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.3);
+          osc.connect(gain).connect(this.ctx.destination);
+          osc.start(this.ctx.currentTime); osc.stop(this.ctx.currentTime + 0.3);
+        } catch(e){}
+      }
+      playVictoryFanfare() {
+        if (!this.ctx) return;
+        try {
+          const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
+          notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.value = freq;
+            const t = this.ctx.currentTime + idx * 0.1;
+            gain.gain.setValueAtTime(0.001, t);
+            gain.gain.linearRampToValueAtTime(0.3, t + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+            osc.connect(gain).connect(this.ctx.destination);
+            osc.start(t); osc.stop(t + 0.5);
+          });
+        } catch(e){}
+      }
+      speakQuestion(text) {
+        if ('speechSynthesis' in window) {
+          try {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'th-TH';
+            utterance.rate = 1.05;
+            window.speechSynthesis.speak(utterance);
+          } catch(e){}
+        }
+      }
+      stopSpeech() {
+        if ('speechSynthesis' in window) {
+          try { window.speechSynthesis.cancel(); } catch(e){}
+        }
+      }
+    }
+    const audio = new AudioEngine();
+
+    /* ==========================================================
+       3. AR ARCHERY GAME ENGINE
+       ========================================================== */
+    class ArcheryAIGame {
+      constructor() {
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.video = document.getElementById('webcam');
+        this.hands = null;
+        this.camera = null;
+
+        this.mouseMode = false;
+        this.mouse = { x: 0, y: 0, down: false };
+
+        this.state = 'MENU';
+        this.questions = [];
+        this.qIndex = 0;
+        this.score = 0;
+        this.baseScore = 0;
+        this.speedScore = 0;
+        this.combo = 0;
+        this.shotsFired = 0;
+        this.shotsHit = 0;
+
+        this.maxTime = 15;
+        this.timeLeft = 15;
+        this.timerInterval = null;
+        this.totalTimeSpent = 0;
+
+        this.bowState = 'IDLE';
+        this.bowPos = { x: 0, y: 0 };
+        this.pullPos = { x: 0, y: 0 };
+        this.aimAngle = 0;
+        this.pullPower = 0;
+        this.pullDistance = 0;
+        this.minPullDist = 60;
+        this.maxPullDist = 280;
+        this.minReleasePower = 35;
+        this.statusText = 'ยื่นมือซ้ายเพื่อถือคันธนู';
+
+        this.prevRightFist = false;
+        this.arrow = { x: 0, y: 0, vx: 0, vy: 0, flying: false, angle: 0, power: 0 };
+        this.targets = [];
+        this.particles = [];
+        this.fireworks = [];
+
+        this.bossHP = 1000;
+        this.bossMaxHP = 1000;
+
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+        this.bindDOM();
+      }
+
+      resize() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        this.minPullDist = Math.max(55, this.canvas.width * 0.05);
+        this.maxPullDist = this.canvas.width * 0.28;
+      }
+
+      bindDOM() {
+        document.getElementById('btnStartGame').onclick = () => this.startARCamera();
+        document.getElementById('btnMousePlay').onclick = () => this.startMouseGame();
+        document.getElementById('btnForceMouse').onclick = () => this.startMouseGame();
+        document.getElementById('btnHowToPlay').onclick = () => document.getElementById('howToPlayModal').classList.remove('hidden');
+        document.getElementById('btnCloseHTP').onclick = () => document.getElementById('howToPlayModal').classList.add('hidden');
+        document.getElementById('btnRestart').onclick = () => {
+          document.getElementById('resultOverlay').classList.add('hidden');
+          this.startRound();
+        };
+
+        window.addEventListener('mousedown', (e) => {
+          audio.init();
+          this.mouse.down = true;
+          this.mouse.x = e.clientX; this.mouse.y = e.clientY;
+        });
+        window.addEventListener('mousemove', (e) => {
+          this.mouse.x = e.clientX; this.mouse.y = e.clientY;
+        });
+        window.addEventListener('mouseup', () => {
+          if (this.mouseMode && (this.bowState === 'READY' || this.bowState === 'DRAWING') && this.pullPower >= this.minReleasePower) {
+            this.releaseArrow();
+          }
+          this.mouse.down = false;
+          this.pullPower = 0;
+          this.bowState = 'EQUIPPED';
+        });
+      }
+
+      async startARCamera() {
+        audio.init();
+        document.getElementById('menuScreen').classList.add('hidden');
+        document.getElementById('loadingOverlay').classList.remove('hidden');
+
+        try {
+          this.hands = new Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+          });
+          this.hands.setOptions({
+            maxNumHands: 2,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.65,
+            minTrackingConfidence: 0.65
+          });
+          this.hands.onResults((res) => this.onHandResults(res));
+
+          this.camera = new Camera(this.video, {
+            onFrame: async () => { await this.hands.send({ image: this.video }); },
+            width: 1280, height: 720
+          });
+          await this.camera.start();
+
+          document.getElementById('loadingOverlay').classList.add('hidden');
+          this.mouseMode = false;
+          this.startRound();
+        } catch (err) {
+          console.error("Camera error:", err);
+          alert("ไม่สามารถเปิดกล้องได้ ระบบจะสลับไปที่โหมดเมาส์");
+          this.startMouseGame();
+        }
+      }
+
+      startMouseGame() {
+        audio.init();
+        document.getElementById('menuScreen').classList.add('hidden');
+        document.getElementById('loadingOverlay').classList.add('hidden');
+        this.mouseMode = true;
+        this.startRound();
+      }
+
+      startRound() {
+        this.state = 'PLAYING';
+        this.questions = [...AI_QUESTIONS_MASTER].sort(() => Math.random() - 0.5);
+        this.qIndex = 0;
+        this.score = 0;
+        this.baseScore = 0;
+        this.speedScore = 0;
+        this.combo = 0;
+        this.shotsFired = 0;
+        this.shotsHit = 0;
+        this.totalTimeSpent = 0;
+        this.bossMaxHP = 1000;
+        this.bossHP = 1000;
+        this.bowState = 'EQUIPPED';
+        this.loadQuestion();
+        this.loop();
+      }
+
+      loadQuestion() {
+        if (this.qIndex >= this.questions.length) {
+          this.triggerVictory();
+          return;
+        }
+
+        const q = this.questions[this.qIndex];
+        const targetW = Math.min(320, this.canvas.width * 0.28);
+        const targetH = Math.min(115, this.canvas.height * 0.18);
+        const startX = this.canvas.width - targetW - 40;
+
+        const isCorrectTop = Math.random() > 0.5;
+        const currentChoices = isCorrectTop 
+          ? [ { text: q.correctText, isCorrect: true }, { text: q.wrongText, isCorrect: false } ]
+          : [ { text: q.wrongText, isCorrect: false }, { text: q.correctText, isCorrect: true } ];
+
+        this.targets = currentChoices.map((item, idx) => ({
+          idx,
+          text: item.text,
+          isCorrect: item.isCorrect,
+          x: startX,
+          y: (this.canvas.height * 0.44) + idx * (targetH + 22),
+          w: targetW,
+          h: targetH,
+          state: 'normal'
+        }));
+
+        this.timeLeft = this.maxTime;
+        clearInterval(this.timerInterval);
+        this.timerInterval = setInterval(() => {
+          if (this.state === 'PLAYING') {
+            this.timeLeft -= 0.1;
+            this.totalTimeSpent += 0.1;
+            if (this.timeLeft <= 0) {
+              this.timeLeft = 0;
+              clearInterval(this.timerInterval);
+              this.onTimeOut();
+            }
+          }
+        }, 100);
+
+        audio.speakQuestion(`${q.title}. ${q.scenario}`);
+      }
+
+      onTimeOut() {
+        audio.stopSpeech();
+        this.combo = 0;
+        audio.playWrongHit();
+        this.targets.forEach(t => { if (t.isCorrect) t.state = 'correct'; });
+        
+        setTimeout(() => {
+          this.qIndex++;
+          this.loadQuestion();
+        }, 800);
+      }
+
+      onHandResults(results) {
+        if (this.mouseMode || this.state !== 'PLAYING') return;
+
+        if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
+          this.bowState = 'IDLE';
+          this.statusText = 'กรุณายกมือขึ้นมาหน้ากล้อง';
+          return;
+        }
+
+        if (results.multiHandLandmarks.length === 1) {
+          const lm = results.multiHandLandmarks[0];
+          this.bowPos = { x: (1 - lm[9].x) * this.canvas.width, y: lm[9].y * this.canvas.height };
+          this.bowState = 'EQUIPPED';
+          this.pullPower = 0;
+          this.statusText = 'ยื่นมือที่ถือธนูไปข้างหน้า แล้วกำมืออีกข้างเพื่อง้างสาย';
+          return;
+        }
+
+        if (results.multiHandLandmarks.length >= 2) {
+          const lm1 = results.multiHandLandmarks[0];
+          const lm2 = results.multiHandLandmarks[1];
+
+          const p1 = { x: (1 - lm1[9].x) * this.canvas.width, y: lm1[9].y * this.canvas.height, lm: lm1 };
+          const p2 = { x: (1 - lm2[9].x) * this.canvas.width, y: lm2[9].y * this.canvas.height, lm: lm2 };
+
+          let bow = p1.x > p2.x ? p1 : p2;
+          let pull = p1.x > p2.x ? p2 : p1;
+
+          this.bowPos = { x: bow.x, y: bow.y };
+          this.pullPos = { x: pull.x, y: pull.y };
+
+          const isFist = this.checkFist(pull.lm);
+          const isOpen = this.checkOpenHand(pull.lm);
+
+          this.pullDistance = Math.hypot(bow.x - pull.x, bow.y - pull.y);
+          this.aimAngle = Math.atan2(bow.y - pull.y, bow.x - pull.x);
+
+          this.pullPower = Math.min(100, Math.max(0,
+            ((this.pullDistance - this.minPullDist) / (this.maxPullDist - this.minPullDist)) * 100
+          ));
+
+          if (isFist) {
+            if (this.pullPower >= this.minReleasePower) {
+              if (this.bowState !== 'READY' && this.bowState !== 'DRAWING') audio.playArrowDraw();
+              this.bowState = 'READY';
+              this.statusText = `🏹 เล็งเป้าหมายแล้วแบมือขวาเพื่อยิง! [พลัง: ${Math.round(this.pullPower)}%]`;
+            } else {
+              this.bowState = 'DRAWING';
+              this.statusText = `ดึงมือขวาถอยหลังเพื่อเพิ่มแรงง้าง [พลัง: ${Math.round(this.pullPower)}%]`;
+            }
+            this.prevRightFist = true;
+          } else if (isOpen && this.prevRightFist && (this.bowState === 'READY' || this.bowState === 'DRAWING')) {
+            if (this.pullPower >= this.minReleasePower) {
+              this.releaseArrow();
+            }
+            this.bowState = 'EQUIPPED';
+            this.prevRightFist = false;
+            this.pullPower = 0;
+          } else {
+            this.bowState = 'EQUIPPED';
+            this.pullPower = 0;
+            this.prevRightFist = false;
+            this.statusText = 'กำมือขวาและดึงถอยหลังเพื่อง้างสายธนู';
+          }
+        }
+      }
+
+      checkFist(lm) {
+        const wrist = lm[0];
+        let curled = 0;
+        [8, 12, 16, 20].forEach((tip, idx) => {
+          const pip = [6, 10, 14, 18][idx];
+          const dTip = Math.hypot(lm[tip].x - wrist.x, lm[tip].y - wrist.y);
+          const dPip = Math.hypot(lm[pip].x - wrist.x, lm[pip].y - wrist.y);
+          if (dTip < dPip * 1.15) curled++;
+        });
+        return curled >= 3;
+      }
+
+      checkOpenHand(lm) {
+        const wrist = lm[0];
+        let open = 0;
+        [8, 12, 16, 20].forEach((tip, idx) => {
+          const pip = [6, 10, 14, 18][idx];
+          const dTip = Math.hypot(lm[tip].x - wrist.x, lm[tip].y - wrist.y);
+          const dPip = Math.hypot(lm[pip].x - wrist.x, lm[pip].y - wrist.y);
+          if (dTip > dPip * 1.2) open++;
+        });
+        return open >= 3;
+      }
+
+      releaseArrow() {
+        if (this.arrow.flying) return;
+        const speed = 26 + (this.pullPower / 100) * 40;
+        this.arrow = {
+          x: this.bowPos.x,
+          y: this.bowPos.y,
+          vx: Math.cos(this.aimAngle) * speed,
+          vy: Math.sin(this.aimAngle) * speed,
+          angle: this.aimAngle,
+          power: this.pullPower,
+          flying: true
+        };
+        this.shotsFired++;
+        audio.playArrowRelease();
+      }
+
+      updatePhysics() {
+        if (this.mouseMode && this.state === 'PLAYING') {
+          const bowOrigin = { x: this.canvas.width * 0.24, y: this.canvas.height * 0.58 };
+          this.bowPos = bowOrigin;
+          this.pullPos = { x: this.mouse.x, y: this.mouse.y };
+
+          if (this.mouse.down) {
+            this.aimAngle = Math.atan2(this.mouse.y - bowOrigin.y, this.mouse.x - bowOrigin.x);
+            const dist = Math.hypot(this.mouse.x - bowOrigin.y, this.mouse.y - bowOrigin.y);
+            this.pullPower = Math.min(100, Math.max(0, (dist / (this.maxPullDist * 0.8)) * 100));
+            this.bowState = this.pullPower >= this.minReleasePower ? 'READY' : 'DRAWING';
+            this.statusText = `ลากเมาส์เล็งช้อยส์ขวามือ แล้วปล่อยเพื่อยิง [พลัง: ${Math.round(this.pullPower)}%]`;
+          } else {
+            this.bowState = 'EQUIPPED';
+            this.pullPower = 0;
+            this.statusText = 'คลิกค้างแล้วลากเมาส์ไปทางช้อยส์ขวาเพื่อเล็ง';
+          }
+        }
+
+        if (this.arrow.flying) {
+          this.arrow.x += this.arrow.vx;
+          this.arrow.y += this.arrow.vy;
+          this.arrow.vy += 0.12;
+          this.arrow.angle = Math.atan2(this.arrow.vy, this.arrow.vx);
+
+          this.particles.push({
+            x: this.arrow.x, y: this.arrow.y,
+            vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2,
+            color: '#ffd700', size: 4, life: 18
+          });
+
+          for (let target of this.targets) {
+            if (this.arrow.x >= target.x && this.arrow.x <= target.x + target.w &&
+                this.arrow.y >= target.y && this.arrow.y <= target.y + target.h) {
+              this.onHitTarget(target);
+              this.arrow.flying = false;
+              break;
+            }
+          }
+
+          if (this.arrow.x > this.canvas.width + 80 || this.arrow.y > this.canvas.height + 80) {
+            this.arrow.flying = false;
+            this.combo = 0;
+          }
+        }
+
+        this.particles = this.particles.filter(p => {
+          p.x += p.vx; p.y += p.vy; p.life--;
+          return p.life > 0;
+        });
+
+        this.fireworks = this.fireworks.filter(f => {
+          f.x += f.vx; f.y += f.vy; f.vy += 0.05; f.life--;
+          return f.life > 0;
+        });
+      }
+
+      onHitTarget(target) {
+        clearInterval(this.timerInterval);
+        audio.stopSpeech();
+
+        if (target.isCorrect) {
+          this.shotsHit++;
+          this.combo++;
+          const currentBase = 50;
+          const currentSpeed = Math.round((this.timeLeft / this.maxTime) * 50);
+          
+          this.baseScore += currentBase;
+          this.speedScore += currentSpeed;
+          this.score = this.baseScore + this.speedScore;
+          this.bossHP = Math.max(0, this.bossHP - 100);
+
+          audio.playCorrectHit();
+          this.createBurst(target.x + target.w/2, target.y + target.h/2, '#00ff88', 35);
+          target.state = 'correct';
+        } else {
+          this.combo = 0;
+          audio.playWrongHit();
+          this.createBurst(target.x + target.w/2, target.y + target.h/2, '#ff4444', 25);
+          target.state = 'wrong';
+        }
+
+        setTimeout(() => {
+          this.qIndex++;
+          this.loadQuestion();
+        }, 1000);
+      }
+
+      createBurst(x, y, color, count) {
+        for (let i = 0; i < count; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 3 + Math.random() * 7;
+          this.particles.push({
+            x, y,
+            vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+            color, size: 4 + Math.random() * 4, life: 30
+          });
+        }
+      }
+
+      triggerVictory() {
+        this.state = 'RESULT';
+        clearInterval(this.timerInterval);
+        audio.stopSpeech();
+        audio.playVictoryFanfare();
+
+        try {
+          const accuracy = Math.round((this.shotsHit / Math.max(1, this.shotsFired)) * 100);
+          document.getElementById('resAcc').innerText = `${accuracy}% (${this.shotsHit}/${this.questions.length} ข้อ)`;
+          document.getElementById('resScore').innerText = `${this.score} / 1000`;
+          document.getElementById('resBaseScore').innerText = `${this.baseScore} / 500`;
+          document.getElementById('resSpeedScore').innerText = `${this.speedScore} / 500`;
+          document.getElementById('resTotalTime').innerText = `${this.totalTimeSpent.toFixed(1)} วินาที`;
+          document.getElementById('resAvgTime').innerText = `${(this.totalTimeSpent / this.questions.length).toFixed(1)} วิ / ข้อ`;
+
+          let rank = 'B';
+          if (this.score >= 900) rank = 'S';
+          else if (this.score >= 750) rank = 'A';
+          else if (this.score >= 600) rank = 'B';
+          else rank = 'C';
+          document.getElementById('resultRank').innerText = rank;
+        } catch(e) {
+          console.error("DOM Update Error:", e);
+        }
+
+        for (let burst = 0; burst < 8; burst++) {
+          setTimeout(() => {
+            const fx = Math.random() * this.canvas.width;
+            const fy = Math.random() * (this.canvas.height * 0.6);
+            const colors = ['#ffd700', '#00ff88', '#00d4ff', '#ff3388', '#ff7a47'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            for (let i = 0; i < 40; i++) {
+              const angle = Math.random() * Math.PI * 2;
+              const speed = 4 + Math.random() * 8;
+              this.fireworks.push({
+                x: fx, y: fy,
+                vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+                color, size: 5 + Math.random() * 4, life: 60
+              });
+            }
+          }, burst * 280);
+        }
+
+        setTimeout(() => {
+          document.getElementById('resultOverlay').classList.remove('hidden');
+        }, 500);
+      }
+
+      render() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        if (!this.mouseMode && this.video.readyState >= 2) {
+          this.ctx.save();
+          this.ctx.translate(this.canvas.width, 0);
+          this.ctx.scale(-1, 1);
+          this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+          this.ctx.restore();
+
+          this.ctx.fillStyle = 'rgba(7, 11, 29, 0.42)';
+          this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        } else {
+          this.ctx.fillStyle = '#070b1d';
+          this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+
+        if (this.state === 'PLAYING') {
+          this.renderHUD();
+          this.renderQuestionCard();
+          this.renderTargets();
+          this.renderBowAndStrings();
+          this.renderArrow();
+          this.renderParticles();
+        }
+
+        if (this.fireworks.length > 0) {
+          for (let f of this.fireworks) {
+            this.ctx.fillStyle = f.color;
+            this.ctx.shadowColor = f.color;
+            this.ctx.shadowBlur = 10;
+            this.ctx.beginPath();
+            this.ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2);
+            this.ctx.fill();
+          }
+          this.ctx.shadowBlur = 0;
+        }
+      }
+
+      renderHUD() {
+        this.ctx.fillStyle = '#ffd700';
+        this.ctx.font = "bold 24px 'Orbitron', 'Prompt'";
+        this.ctx.textAlign = 'left';
+        this.ctx.fillText(`SCORE: ${this.score} / 1000`, 30, 45);
+
+        if (this.combo >= 2) {
+          this.ctx.fillStyle = '#00ff88';
+          this.ctx.fillText(`🔥 COMBO x${this.combo}`, 340, 45);
+        }
+
+        const barW = Math.min(300, this.canvas.width * 0.28);
+        const barX = this.canvas.width - barW - 30;
+        this.ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        this.ctx.fillRect(barX, 25, barW, 20);
+        this.ctx.strokeStyle = '#00d4ff';
+        this.ctx.strokeRect(barX, 25, barW, 20);
+
+        const hpPct = Math.max(0, this.bossHP / this.bossMaxHP);
+        this.ctx.fillStyle = hpPct > 0.3 ? '#00ff88' : '#ff4444';
+        this.ctx.fillRect(barX + 2, 27, (barW - 4) * hpPct, 16);
+
+        this.ctx.fillStyle = '#fff';
+        this.ctx.font = "bold 13px 'Prompt'";
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText("👾 AI GLITCH BOSS", barX + barW/2, 39);
+
+        this.ctx.fillStyle = 'rgba(11, 20, 53, 0.88)';
+        this.ctx.strokeStyle = 'rgba(255, 215, 0, 0.6)';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.roundRect(30, this.canvas.height - 60, Math.min(580, this.canvas.width * 0.52), 44, [14]);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = this.pullPower >= this.minReleasePower ? '#00ff88' : '#ffd700';
+        this.ctx.font = "bold 16px 'Prompt'";
+        this.ctx.textAlign = 'left';
+        this.ctx.fillText(this.statusText, 48, this.canvas.height - 32);
+      }
+
+      renderQuestionCard() {
+        const q = this.questions[this.qIndex];
+        if (!q) return;
+
+        const cardW = Math.min(620, this.canvas.width * 0.5);
+        const cardH = 185;
+        const cardX = 30;
+        const cardY = 65;
+
+        this.ctx.save();
+        this.ctx.fillStyle = 'rgba(11, 20, 53, 0.92)';
+        this.ctx.strokeStyle = '#00d4ff';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.shadowColor = 'rgba(0, 212, 255, 0.4)';
+        this.ctx.shadowBlur = 16;
+        this.ctx.beginPath();
+        this.ctx.roundRect(cardX, cardY, cardW, cardH, [20]);
+        this.ctx.fill();
+        this.ctx.stroke();
+        this.ctx.shadowBlur = 0;
+
+        this.ctx.fillStyle = '#ffd700';
+        this.ctx.font = "bold 16px 'Prompt', 'Orbitron'";
+        this.ctx.textAlign = 'left';
+        this.ctx.fillText(`⚡ ภารกิจที่ ${this.qIndex + 1}/${this.questions.length} : ${q.category}`, cardX + 22, cardY + 32);
+
+        const timerWidth = (cardW - 44) * (this.timeLeft / this.maxTime);
+        this.ctx.fillStyle = this.timeLeft > 5 ? '#00ff88' : '#ff4444';
+        this.ctx.fillRect(cardX + 22, cardY + 42, Math.max(0, timerWidth), 5);
+
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = "800 24px 'Prompt'";
+        this.ctx.fillText(`${q.emoji} ${q.title}`, cardX + 22, cardY + 76);
+
+        this.ctx.fillStyle = '#fff4a3';
+        this.ctx.font = "600 18px 'Prompt'";
+        this.wrapText(`" ${q.scenario} "`, cardX + 22, cardY + 112, cardW - 44, 28);
+
+        this.ctx.restore();
+      }
+
+      wrapText(text, x, y, maxWidth, lineHeight) {
+        const words = text.split(' ');
+        let line = '';
+        for (let n = 0; n < words.length; n++) {
+          let testLine = line + words[n] + ' ';
+          let metrics = this.ctx.measureText(testLine);
+          if (metrics.width > maxWidth && n > 0) {
+            this.ctx.fillText(line, x, y);
+            line = words[n] + ' ';
+            y += lineHeight;
+          } else {
+            line = testLine;
+          }
+        }
+        this.ctx.fillText(line, x, y);
+      }
+
+      renderTargets() {
+        for (let t of this.targets) {
+          this.ctx.save();
+          if (t.state === 'correct') {
+            this.ctx.fillStyle = 'rgba(0, 255, 136, 0.75)';
+            this.ctx.strokeStyle = '#00ff88';
+          } else if (t.state === 'wrong') {
+            this.ctx.fillStyle = 'rgba(255, 68, 68, 0.75)';
+            this.ctx.strokeStyle = '#ff4444';
+          } else {
+            this.ctx.fillStyle = 'rgba(17, 21, 56, 0.9)';
+            this.ctx.strokeStyle = '#00d4ff';
+          }
+
+          this.ctx.lineWidth = 3;
+          this.ctx.beginPath();
+          this.ctx.roundRect(t.x, t.y, t.w, t.h, [18]);
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          this.ctx.fillStyle = '#fff';
+          this.ctx.font = "bold 17px 'Prompt'";
+          this.ctx.textAlign = 'center';
+          this.ctx.fillText(t.text, t.x + t.w / 2, t.y + t.h / 2 + 7);
+          this.ctx.restore();
+        }
+      }
+
+      renderBowAndStrings() {
+        if (!this.bowPos.x || this.bowState === 'IDLE') return;
+
+        const bx = this.bowPos.x;
+        const by = this.bowPos.y;
+        const angle = this.aimAngle;
+        const bowRadius = 75;
+
+        const topX = bx + Math.cos(angle - Math.PI / 2.2) * bowRadius;
+        const topY = by + Math.sin(angle - Math.PI / 2.2) * bowRadius;
+        const botX = bx + Math.cos(angle + Math.PI / 2.2) * bowRadius;
+        const botY = by + Math.sin(angle + Math.PI / 2.2) * bowRadius;
+
+        this.ctx.save();
+        const isDrawnState = (this.bowState === 'READY' || this.bowState === 'DRAWING');
+        this.ctx.strokeStyle = isDrawnState ? "rgba(255, 68, 68, 0.95)" : "rgba(0, 212, 255, 0.75)";
+        this.ctx.lineWidth = isDrawnState ? 4 : 2.5;
+        this.ctx.shadowColor = isDrawnState ? '#ff4444' : '#00d4ff';
+        this.ctx.shadowBlur = isDrawnState ? 15 : 6;
+
+        this.ctx.beginPath();
+        if (isDrawnState && this.pullPos.x) {
+          this.ctx.moveTo(topX, topY);
+          this.ctx.lineTo(this.pullPos.x, this.pullPos.y);
+          this.ctx.lineTo(botX, botY);
+        } else {
+          this.ctx.moveTo(topX, topY);
+          this.ctx.lineTo(botX, botY);
+        }
+        this.ctx.stroke();
+        this.ctx.restore();
+
+        this.ctx.save();
+        this.ctx.translate(bx, by);
+        this.ctx.rotate(angle);
+
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, bowRadius, -Math.PI / 2.2, Math.PI / 2.2);
+        this.ctx.lineWidth = 10;
+        this.ctx.strokeStyle = '#ffd700';
+        this.ctx.shadowColor = '#00d4ff';
+        this.ctx.shadowBlur = 18;
+        this.ctx.stroke();
+
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, bowRadius, -Math.PI / 2.2, Math.PI / 2.2);
+        this.ctx.lineWidth = 4;
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.stroke();
+        this.ctx.restore();
+
+        if (isDrawnState) {
+          this.ctx.save();
+          const speed = 26 + (this.pullPower / 100) * 40;
+          const vx = Math.cos(angle) * speed;
+          let vy = Math.sin(angle) * speed;
+          let px = bx, py = by;
+
+          this.ctx.fillStyle = this.pullPower >= this.minReleasePower ? '#00ff88' : '#ffd700';
+          for (let i = 0; i < 24; i++) {
+            px += vx * 1.6;
+            py += vy * 1.6;
+            vy += 0.12 * 1.6;
+            this.ctx.beginPath();
+            this.ctx.arc(px, py, Math.max(2, 5 - i * 0.18), 0, Math.PI * 2);
+            this.ctx.fill();
+            if (px > this.canvas.width || py > this.canvas.height) break;
+          }
+          this.ctx.restore();
+        }
+      }
+
+      renderArrow() {
+        if (!this.arrow.flying) return;
+        this.ctx.save();
+        this.ctx.translate(this.arrow.x, this.arrow.y);
+        this.ctx.rotate(this.arrow.angle);
+
+        this.ctx.strokeStyle = '#ffd700';
+        this.ctx.lineWidth = 5;
+        this.ctx.shadowColor = '#00d4ff';
+        this.ctx.shadowBlur = 15;
+        this.ctx.beginPath();
+        this.ctx.moveTo(-50, 0);
+        this.ctx.lineTo(15, 0);
+        this.ctx.stroke();
+
+        this.ctx.restore();
+      }
+
+      renderParticles() {
+        for (let p of this.particles) {
+          this.ctx.fillStyle = p.color;
+          this.ctx.beginPath();
+          this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
+      }
+
+      loop() {
+        this.updatePhysics();
+        this.render();
+        requestAnimationFrame(() => this.loop());
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      window.game = new ArcheryAIGame();
+    });
+  </script>
+</body>
+</html>
