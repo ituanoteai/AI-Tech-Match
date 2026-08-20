@@ -11,6 +11,7 @@
   
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <style>
     :root {
@@ -95,6 +96,7 @@
     .btn-gold { background: linear-gradient(135deg, #ff7a47, #ffd700); color: #1a0f00; border-color: #fff6a8; }
     .btn-primary { background: linear-gradient(135deg, #1f9eea, #7044dd); color: #fff; border-color: #83e8ff; }
     .btn-secondary { background: rgba(39, 53, 108, 0.7); color: #e5eaff; border-color: rgba(177, 191, 244, 0.5); }
+    .btn-green { background: linear-gradient(135deg, #10b981, #059669); color: #fff; border-color: #6ee7b7; }
     .btn-sm { padding: 10px 24px; font-size: 1rem; border-radius: 14px; }
 
     .game-title {
@@ -118,7 +120,7 @@
     }
 
     .result-card-epic {
-      text-align: center; padding: 36px 44px; width: min(600px, 94vw);
+      text-align: center; padding: 24px 34px; width: min(620px, 94vw);
       background: linear-gradient(145deg, rgba(20, 35, 85, 0.96), rgba(7, 13, 35, 0.98));
       border: 3.5px solid #ffd700;
       box-shadow: 0 0 60px rgba(255, 215, 0, 0.6), inset 0 0 35px rgba(0, 212, 255, 0.35);
@@ -129,10 +131,10 @@
       100% { transform: scale(1.02); box-shadow: 0 0 80px rgba(255, 215, 0, 0.85), 0 0 110px rgba(0, 212, 255, 0.5); }
     }
     .result-rank {
-      font-size: 5rem; font-weight: 900; font-family: var(--font-display);
+      font-size: 3.8rem; font-weight: 900; font-family: var(--font-display);
       background: linear-gradient(135deg, #fff, var(--gold), #ff7a47);
       -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 0 30px var(--gold)); margin: 4px 0;
+      filter: drop-shadow(0 0 25px var(--gold)); margin: 0;
       animation: rankBounce 1.2s infinite alternate ease-in-out;
     }
     @keyframes rankBounce {
@@ -142,8 +144,8 @@
 
     .stat-row {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 8px 16px; border-radius: 12px; background: rgba(255, 255, 255, 0.05);
-      margin-bottom: 8px; font-size: 1.05rem;
+      padding: 6px 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.05);
+      margin-bottom: 5px; font-size: 0.95rem;
     }
   </style>
 </head>
@@ -165,7 +167,7 @@
       <div class="menu-card">
         <div style="font-size: 4rem; animation: float 3s ease-in-out infinite;">🏹 🤖</div>
         <h1 class="game-title">AI Tech Match</h1>
-        <p class="game-subtitle">ภารกิจยิงธนูจำแนก "AI ในชีวิตประจำวัน" </p>
+        <p class="game-subtitle">ภารกิจยิงธนูจำแนก "AI ในชีวิตประจำวัน"</p>
 
         <div style="display:flex; flex-direction:column; gap:16px; width:min(380px, 85vw);">
           <button class="btn btn-gold hand-interact" id="btnStartGame">🎯 เริ่มเล่นเกม (AR ยิงธนู)</button>
@@ -193,21 +195,25 @@
 
     <!-- 3. EPIC RESULT OVERLAY -->
     <div id="resultOverlay" class="screen-overlay hidden">
-      <div class="glass-card result-card-epic">
-        <div style="font-size: 3rem;">👑 🏆 🎊</div>
-        <h2 style="color:var(--gold); font-size:1.8rem; font-weight:900; text-shadow:0 0 20px rgba(255,215,0,0.6);">
+      <div id="captureArea" class="glass-card result-card-epic">
+        <div style="font-size: 2.2rem;">👑 🏆 🎊</div>
+        <h2 style="color:var(--gold); font-size:1.5rem; font-weight:900; text-shadow:0 0 20px rgba(255,215,0,0.6);">
           สรุปผลการทดสอบ AI Tech Match
         </h2>
         <div class="result-rank" id="resultRank">S</div>
 
-        <div style="background:rgba(0,0,0,0.45); border:1.5px solid rgba(255,215,0,0.3); border-radius:20px; padding:16px; margin:14px 0; text-align:left;">
+        <div style="background:rgba(0,0,0,0.45); border:1.5px solid rgba(255,215,0,0.3); border-radius:18px; padding:12px; margin:8px 0; text-align:left;">
           <div class="stat-row" style="background:rgba(0,255,136,0.15); border-left:5px solid var(--neon-green);">
             <span style="font-weight:bold; color:#fff;">คะแนนรวมสุทธิ:</span>
-            <span style="font-size:1.4rem; font-weight:900; color:var(--neon-green);" id="resScore">0 / 1000</span>
+            <span style="font-size:1.25rem; font-weight:900; color:var(--neon-green);" id="resScore">0 / 1000</span>
           </div>
           <div class="stat-row">
-            <span style="color:var(--white-dim);">🎯 ตอบถูกต้อง:</span>
-            <span style="font-weight:bold; color:var(--blue);" id="resAcc">0%</span>
+            <span style="color:var(--white-dim);">🎯 อัตราการตอบถูก:</span>
+            <span style="font-weight:bold; color:var(--neon-green);" id="resCorrectRate">100% (10/10 ข้อ)</span>
+          </div>
+          <div class="stat-row">
+            <span style="color:var(--white-dim);">🏹 ความแม่นยำการยิงธนู:</span>
+            <span style="font-weight:bold; color:var(--blue);" id="resAccuracy">100% (ยิง 10 ดอก)</span>
           </div>
           <div class="stat-row">
             <span style="color:var(--white-dim);">📌 คะแนนพื้นฐาน (50 x ข้อ):</span>
@@ -217,7 +223,7 @@
             <span style="color:var(--white-dim);">⚡ โบนัสความเร็ว (Speed Bonus):</span>
             <span style="font-weight:bold; color:var(--gold);" id="resSpeedScore">0 / 500</span>
           </div>
-          <div class="stat-row" style="border-top:1px solid rgba(255,255,255,0.15); margin-top:8px; padding-top:8px;">
+          <div class="stat-row" style="border-top:1px solid rgba(255,255,255,0.15); margin-top:5px; padding-top:5px;">
             <span style="color:var(--white-dim);">⏱️ เวลารวมที่ใช้จริง:</span>
             <span style="font-weight:bold; color:#ff7a47;" id="resTotalTime">0.0 วินาที</span>
           </div>
@@ -227,7 +233,21 @@
           </div>
         </div>
 
-        <button class="btn btn-gold btn-sm hand-interact" id="btnRestart" style="margin-top:10px;">🔄 เล่นรอบถัดไป</button>
+        <!-- แถบระบุวันที่และผู้จัดทำ (บันทึกลงรูปภาพ) -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin:6px 0 10px; font-size:0.85rem; color:var(--white-dim); padding:0 6px;">
+          <span>📅 วันที่: <b id="resDateTime" style="color:var(--gold);">-</b></span>
+          <span style="color:var(--gold); font-weight:700;">By นายพิรสิฏฐ์ พีรภัคโสภณ</span>
+        </div>
+
+        <!-- แถบปุ่มควบคุมในหน้าสรุปผล -->
+        <div style="display:flex; justify-content:center; gap:12px; margin-top:6px;" data-html2canvas-ignore="true">
+          <button class="btn btn-green btn-sm hand-interact" id="btnCaptureScore">
+            📸 บันทึกภาพคะแนน
+          </button>
+          <button class="btn btn-gold btn-sm hand-interact" id="btnRestart">
+            🔄 เล่นรอบถัดไป
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -480,7 +500,7 @@
     const audio = new AudioEngine();
 
     /* ==========================================================
-       3. AR ARCHERY GAME ENGINE (PLASMA ENERGY BOW & ARROW)
+       3. AR ARCHERY GAME ENGINE
        ========================================================== */
     class ArcheryAIGame {
       constructor() {
@@ -520,7 +540,7 @@
         this.minReleasePower = 30;
         this.statusText = 'ยื่นมือซ้ายเพื่อถือคันธนู';
 
-        // ปรับปรุงเงื่อนไข Trigger ยิงลูกธนูให้เสถียร 100%
+        this.isTransitioning = false;
         this.wasDrawing = false;
         this.lastDrawnPower = 0;
         this.lastAimAngle = 0;
@@ -567,6 +587,10 @@
           this.startRound();
         };
 
+        document.getElementById('btnCaptureScore').onclick = () => {
+          this.captureScoreCard();
+        };
+
         window.addEventListener('mousedown', (e) => {
           audio.init();
           this.mouse.down = true;
@@ -576,12 +600,39 @@
           this.mouse.x = e.clientX; this.mouse.y = e.clientY;
         });
         window.addEventListener('mouseup', () => {
-          if (this.mouseMode && this.pullPower >= this.minReleasePower) {
+          if (this.mouseMode && this.pullPower >= this.minReleasePower && !this.isTransitioning) {
             this.releaseArrow(this.pullPower, this.aimAngle);
           }
           this.mouse.down = false;
           this.pullPower = 0;
           this.bowState = 'EQUIPPED';
+        });
+      }
+
+      captureScoreCard() {
+        const targetElement = document.getElementById('captureArea');
+        if (!targetElement) return;
+
+        const btn = document.getElementById('btnCaptureScore');
+        const origText = btn.innerText;
+        btn.innerText = "⏳ กำลังบันทึกภาพ...";
+
+        html2canvas(targetElement, {
+          backgroundColor: '#070b1d',
+          scale: 2,
+          useCORS: true
+        }).then(canvas => {
+          const imageURL = canvas.toDataURL('image/png');
+          const link = document.createElement('a');
+          link.href = imageURL;
+          link.download = `AI-Tech-Match-Score-${Date.now()}.png`;
+          link.click();
+          btn.innerText = "✅ บันทึกสำเร็จแล้ว!";
+          setTimeout(() => { btn.innerText = origText; }, 2500);
+        }).catch(err => {
+          console.error("Screenshot error:", err);
+          alert("ไม่สามารถบันทึกภาพได้ กรุณาแคปภาพหน้าจอด้วยมือถือหรือคอมพิวเตอร์แทนครับ");
+          btn.innerText = origText;
         });
       }
 
@@ -633,6 +684,7 @@
         this.bossHP = 1000;
         this.bowState = 'EQUIPPED';
         this.wasDrawing = false;
+        this.isTransitioning = false;
         this.loadQuestion();
       }
 
@@ -641,6 +693,9 @@
           this.triggerVictory();
           return;
         }
+
+        this.isTransitioning = false;
+        this.arrow.flying = false;
 
         const q = this.questions[this.qIndex];
         
@@ -667,7 +722,7 @@
         this.timeLeft = this.maxTime;
         clearInterval(this.timerInterval);
         this.timerInterval = setInterval(() => {
-          if (this.state === 'PLAYING') {
+          if (this.state === 'PLAYING' && !this.isTransitioning) {
             this.timeLeft -= 0.1;
             this.totalTimeSpent += 0.1;
             if (this.timeLeft <= 0) {
@@ -682,6 +737,9 @@
       }
 
       onTimeOut() {
+        if (this.isTransitioning) return;
+        this.isTransitioning = true;
+
         audio.stopSpeech();
         this.combo = 0;
         audio.playWrongHit();
@@ -698,7 +756,6 @@
 
         this.currentHandLandmarks = results.multiHandLandmarks || [];
 
-        // หน้าเมนู: Hover Interaction
         if (this.state !== 'PLAYING') {
           if (this.currentHandLandmarks.length > 0) {
             const lm = this.currentHandLandmarks[0];
@@ -716,9 +773,8 @@
           return;
         }
 
-        // ช่วงเกมเพลย์
         if (this.currentHandLandmarks.length === 0) {
-          if (this.wasDrawing && this.lastDrawnPower >= this.minReleasePower) {
+          if (this.wasDrawing && this.lastDrawnPower >= this.minReleasePower && !this.isTransitioning) {
             this.releaseArrow(this.lastDrawnPower, this.lastAimAngle);
           }
           this.bowState = 'IDLE';
@@ -728,7 +784,7 @@
         }
 
         if (this.currentHandLandmarks.length === 1) {
-          if (this.wasDrawing && this.lastDrawnPower >= this.minReleasePower) {
+          if (this.wasDrawing && this.lastDrawnPower >= this.minReleasePower && !this.isTransitioning) {
             this.releaseArrow(this.lastDrawnPower, this.lastAimAngle);
           }
           const lm = this.currentHandLandmarks[0];
@@ -763,7 +819,7 @@
             ((this.pullDistance - this.minPullDist) / (this.maxPullDist - this.minPullDist)) * 100
           ));
 
-          if (isFist) {
+          if (isFist && !this.isTransitioning) {
             this.lastDrawnPower = this.pullPower;
             this.lastAimAngle = this.aimAngle;
             this.wasDrawing = true;
@@ -777,7 +833,7 @@
               this.statusText = `ดึงมือขวาถอยหลังเพื่อเพิ่มแรงง้าง [พลัง: ${Math.round(this.pullPower)}%]`;
             }
           } else if (isOpen || !isFist) {
-            if (this.wasDrawing && this.lastDrawnPower >= this.minReleasePower) {
+            if (this.wasDrawing && this.lastDrawnPower >= this.minReleasePower && !this.isTransitioning) {
               this.releaseArrow(this.lastDrawnPower, this.lastAimAngle);
             }
             this.bowState = 'EQUIPPED';
@@ -892,7 +948,7 @@
       }
 
       releaseArrow(power, angle) {
-        if (this.arrow.flying) return;
+        if (this.arrow.flying || this.isTransitioning) return;
         const speed = 28 + (power / 100) * 42;
         this.arrow = {
           x: this.bowPos.x,
@@ -915,7 +971,7 @@
           this.bowPos = bowOrigin;
           this.pullPos = { x: this.mouse.x, y: this.mouse.y };
 
-          if (this.mouse.down) {
+          if (this.mouse.down && !this.isTransitioning) {
             this.aimAngle = Math.atan2(this.mouse.y - bowOrigin.y, this.mouse.x - bowOrigin.x);
             const dist = Math.hypot(this.mouse.x - bowOrigin.y, this.mouse.y - bowOrigin.y);
             this.pullPower = Math.min(100, Math.max(0, (dist / (this.maxPullDist * 0.8)) * 100));
@@ -934,7 +990,6 @@
           this.arrow.vy += 0.10;
           this.arrow.angle = Math.atan2(this.arrow.vy, this.arrow.vx);
 
-          // ละอองพลาสม่าตามหลังลูกศร
           for (let k = 0; k < 2; k++) {
             this.particles.push({
               x: this.arrow.x - Math.cos(this.arrow.angle) * 30 + (Math.random() - 0.5) * 8,
@@ -947,12 +1002,14 @@
             });
           }
 
-          for (let target of this.targets) {
-            if (this.arrow.x >= target.x && this.arrow.x <= target.x + target.w &&
-                this.arrow.y >= target.y && this.arrow.y <= target.y + target.h) {
-              this.onHitTarget(target);
-              this.arrow.flying = false;
-              break;
+          if (!this.isTransitioning) {
+            for (let target of this.targets) {
+              if (this.arrow.x >= target.x && this.arrow.x <= target.x + target.w &&
+                  this.arrow.y >= target.y && this.arrow.y <= target.y + target.h) {
+                this.onHitTarget(target);
+                this.arrow.flying = false;
+                break;
+              }
             }
           }
 
@@ -974,6 +1031,9 @@
       }
 
       onHitTarget(target) {
+        if (this.isTransitioning) return;
+        this.isTransitioning = true;
+
         clearInterval(this.timerInterval);
         audio.stopSpeech();
 
@@ -1018,18 +1078,30 @@
 
       triggerVictory() {
         this.state = 'RESULT';
+        this.isTransitioning = false;
         clearInterval(this.timerInterval);
         audio.stopSpeech();
         audio.playVictoryFanfare();
 
         try {
-          const accuracy = Math.round((this.shotsHit / Math.max(1, this.shotsFired)) * 100);
-          document.getElementById('resAcc').innerText = `${accuracy}% (${this.shotsHit}/${this.questions.length} ข้อ)`;
+          const correctRate = Math.round((this.shotsHit / this.questions.length) * 100);
+          document.getElementById('resCorrectRate').innerText = `${correctRate}% (${this.shotsHit}/${this.questions.length} ข้อ)`;
+
+          const totalShots = Math.max(this.shotsHit, this.shotsFired);
+          const shootingAccuracy = Math.round((this.shotsHit / Math.max(1, totalShots)) * 100);
+          document.getElementById('resAccuracy').innerText = `${shootingAccuracy}% (ยิง ${totalShots} ดอก)`;
+
           document.getElementById('resScore').innerText = `${this.score} / 1000`;
           document.getElementById('resBaseScore').innerText = `${this.baseScore} / 500`;
           document.getElementById('resSpeedScore').innerText = `${this.speedScore} / 500`;
           document.getElementById('resTotalTime').innerText = `${this.totalTimeSpent.toFixed(1)} วินาที`;
           document.getElementById('resAvgTime').innerText = `${(this.totalTimeSpent / this.questions.length).toFixed(1)} วิ / ข้อ`;
+
+          // ใส่วันที่และเวลาปัจจุบัน (รูปแบบภาษาไทย)
+          const now = new Date();
+          const dateStr = now.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+          const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+          document.getElementById('resDateTime').innerText = `${dateStr} เวลา ${timeStr} น.`;
 
           let rank = 'B';
           if (this.score >= 900) rank = 'S';
@@ -1254,9 +1326,6 @@
         }
       }
 
-      /* ==========================================================
-         วาดคันธนูไซไฟเรืองแสง (CYBERPUNK PLASMA BOW)
-         ========================================================== */
       renderCyberBowAndStrings() {
         if (!this.bowPos.x || this.bowState === 'IDLE') return;
 
@@ -1273,7 +1342,6 @@
         this.ctx.save();
         const isDrawnState = (this.bowState === 'READY' || this.bowState === 'DRAWING');
 
-        // 1. วาดสายธนูเลเซอร์
         this.ctx.strokeStyle = isDrawnState ? "rgba(255, 68, 68, 0.95)" : "rgba(0, 212, 255, 0.85)";
         this.ctx.lineWidth = isDrawnState ? 4 : 2.5;
         this.ctx.shadowColor = isDrawnState ? '#ff4444' : '#00d4ff';
@@ -1291,19 +1359,16 @@
         this.ctx.stroke();
         this.ctx.restore();
 
-        // 2. วาดโครงคันธนู Cyber Arc
         this.ctx.save();
         this.ctx.translate(bx, by);
         this.ctx.rotate(angle);
 
-        // ปีกชั้นนอก (Armor Wings)
         this.ctx.beginPath();
         this.ctx.arc(0, 0, bowRadius, -Math.PI / 2.1, Math.PI / 2.1);
         this.ctx.lineWidth = 14;
         this.ctx.strokeStyle = '#1e1b4b';
         this.ctx.stroke();
 
-        // เส้นแกนพลังงานหลักสีทองนีออน
         this.ctx.beginPath();
         this.ctx.arc(0, 0, bowRadius, -Math.PI / 2.2, Math.PI / 2.2);
         this.ctx.lineWidth = 7;
@@ -1312,14 +1377,12 @@
         this.ctx.shadowBlur = 22;
         this.ctx.stroke();
 
-        // แกนคริสตัลตรงกลาง
         this.ctx.beginPath();
         this.ctx.arc(0, 0, bowRadius, -Math.PI / 2.2, Math.PI / 2.2);
         this.ctx.lineWidth = 2.5;
         this.ctx.strokeStyle = '#ffffff';
         this.ctx.stroke();
 
-        // คริสตัลที่ปลายคันธนูทั้ง 2 ข้าง
         [-Math.PI / 2.2, Math.PI / 2.2].forEach(a => {
           const cx = Math.cos(a) * bowRadius;
           const cy = Math.sin(a) * bowRadius;
@@ -1331,7 +1394,6 @@
 
         this.ctx.restore();
 
-        // 3. วาดลูกศรขณะง้างสายธนู (Ready Arrow)
         if (isDrawnState && this.pullPos.x) {
           this.ctx.save();
           this.ctx.translate(this.pullPos.x, this.pullPos.y);
@@ -1339,7 +1401,6 @@
           this.drawPlasmaArrowGraphic(this.ctx, Math.hypot(bx - this.pullPos.x, by - this.pullPos.y) + 30);
           this.ctx.restore();
 
-          // เส้นวิถีเล็งเป้า
           this.ctx.save();
           const speed = 28 + (this.pullPower / 100) * 42;
           const vx = Math.cos(angle) * speed;
@@ -1360,9 +1421,6 @@
         }
       }
 
-      /* ==========================================================
-         วาดลูกศรพลาสม่าบิน (FLYING PLASMA ARROW)
-         ========================================================== */
       renderPlasmaArrow() {
         if (!this.arrow.flying) return;
         this.ctx.save();
@@ -1372,15 +1430,12 @@
         this.ctx.restore();
       }
 
-      /* กราฟิกลูกศรพลังงานแสงออโรร่า / Energy Plasma Arrow */
       drawPlasmaArrowGraphic(ctx, arrowLength) {
         ctx.save();
 
-        // 1. แสงเรืองรอบลูกศร
         ctx.shadowColor = '#00d4ff';
         ctx.shadowBlur = 24;
 
-        // 2. ก้านลูกธนูพลาสม่าไล่เฉดสี
         const grad = ctx.createLinearGradient(0, 0, arrowLength, 0);
         grad.addColorStop(0, 'rgba(0, 212, 255, 0.1)');
         grad.addColorStop(0.4, '#00d4ff');
@@ -1395,7 +1450,6 @@
         ctx.lineTo(arrowLength, 0);
         ctx.stroke();
 
-        // 3. แกนแสงสีขาวแกนกลาง
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2.5;
         ctx.beginPath();
@@ -1403,7 +1457,6 @@
         ctx.lineTo(arrowLength, 0);
         ctx.stroke();
 
-        // 4. หัวลูกศรคริสตัลเพชร
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         ctx.moveTo(arrowLength + 14, 0);
@@ -1413,7 +1466,6 @@
         ctx.closePath();
         ctx.fill();
 
-        // 5. ครีบหางพลังงานนีออน (Energy Fletchings)
         ctx.strokeStyle = '#00ff88';
         ctx.lineWidth = 3;
         [8, 22].forEach(pos => {
