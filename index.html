@@ -233,7 +233,7 @@
           </div>
         </div>
 
-        <!-- แถบระบุวันที่และผู้จัดทำ (บันทึกลงรูปภาพ) -->
+        <!-- แถบระบุวันที่และผู้จัดทำ -->
         <div style="display:flex; justify-content:space-between; align-items:center; margin:6px 0 10px; font-size:0.85rem; color:var(--white-dim); padding:0 6px;">
           <span>📅 วันที่: <b id="resDateTime" style="color:var(--gold);">-</b></span>
           <span style="color:var(--gold); font-weight:700;">By นายพิรสิฏฐ์ พีรภัคโสภณ</span>
@@ -279,7 +279,7 @@
         wrongText: "❌ ไม่ใช่เทคโนโลยี AI"
       },
       {
-        title: "การแนะนำภาพยนตร์บน Netflix / YouTube",
+        title: "การแนะนำภาพยนตร์บน Netflix และ YouTube",
         scenario: "ระบบจัดหน้าฟีดแนะนำหนังและเพลงใหม่ๆ ตรงตามแนวที่คุณชอบดูเป็นประจำ",
         emoji: "🎬🍿",
         correctText: "✅ ใช้เทคโนโลยี AI",
@@ -294,7 +294,7 @@
       },
       {
         title: "ระบบคัดกรองสแปมอีเมล ใน Gmail",
-        scenario: "ตรวจจับและแยกจดหมายหลอกลวง/โฆษณาอันตรายเข้าถังขยะอัตโนมัติ",
+        scenario: "ตรวจจับและแยกจดหมายหลอกลวงหรือโฆษณาอันตรายเข้าถังขยะอัตโนมัติ",
         emoji: "📧🛡️",
         correctText: "✅ ใช้เทคโนโลยี AI",
         wrongText: "❌ ไม่ใช่เทคโนโลยี AI"
@@ -307,7 +307,7 @@
         wrongText: "✅ ใช้เทคโนโลยี AI"
       },
       {
-        title: "แชตบอต ChatGPT / Gemini โต้ตอบตอบคำถาม",
+        title: "แชตบอต ChatGPT และ Gemini โต้ตอบตอบคำถาม",
         scenario: "สามารถคุยตอบคำถาม เขียนบทความ และแต่งกลอนภาษาไทยได้อย่างลื่นไหล",
         emoji: "🤖💬",
         correctText: "✅ ใช้เทคโนโลยี AI",
@@ -330,7 +330,7 @@
     ];
 
     /* ==========================================================
-       2. AUDIO & SPEECH ENGINE
+       2. AUDIO & SPEECH ENGINE (ระบบเสียงภาษาไทยเสถียร 100%)
        ========================================================== */
     class AudioEngine {
       constructor() {
@@ -354,7 +354,11 @@
         if ('speechSynthesis' in window) {
           const findVoice = () => {
             const voices = window.speechSynthesis.getVoices();
-            this.thaiVoice = voices.find(v => v.lang === 'th-TH' || v.lang === 'th_TH' || v.lang.startsWith('th')) || null;
+            this.thaiVoice = voices.find(v => 
+              v.lang === 'th-TH' || 
+              v.lang === 'th_TH' || 
+              v.lang.toLowerCase().startsWith('th')
+            ) || null;
           };
           findVoice();
           window.speechSynthesis.onvoiceschanged = findVoice;
@@ -462,22 +466,25 @@
       speakQuestion(text) {
         this.stopSpeech();
 
+        // 1. ถ้าเครื่องมี Voice ภาษาไทย ให้ใช้ SpeechSynthesis ของระบบ
         if (this.thaiVoice && 'speechSynthesis' in window) {
           try {
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.voice = this.thaiVoice;
             utterance.lang = 'th-TH';
-            utterance.rate = 1.05;
+            utterance.rate = 1.0;
             window.speechSynthesis.speak(utterance);
             return;
           } catch(e){}
         }
 
+        // 2. ถ้าเครื่องไม่มี Voice ภาษาไทย ให้ดึงเสียงภาษาไทยแท้ผ่าน Cloud TTS Stream
         try {
           const cleanText = text.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').trim();
           const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText)}&tl=th&client=tw-ob`;
           this.onlineAudio.src = ttsUrl;
           this.onlineAudio.play().catch(err => {
+            // สำรองสุดท้ายหากติดบล็อกออนไลน์
             if ('speechSynthesis' in window) {
               const u = new SpeechSynthesisUtterance(text);
               u.lang = 'th-TH';
@@ -573,16 +580,25 @@
 
       bindDOM() {
         document.getElementById('btnStartGame').onclick = () => {
+          audio.init();
           this.mouseMode = false;
           this.startRound();
         };
         document.getElementById('btnMousePlay').onclick = () => {
+          audio.init();
           this.mouseMode = true;
           this.startRound();
         };
-        document.getElementById('btnHowToPlay').onclick = () => document.getElementById('howToPlayModal').classList.remove('hidden');
-        document.getElementById('btnCloseHTP').onclick = () => document.getElementById('howToPlayModal').classList.add('hidden');
+        document.getElementById('btnHowToPlay').onclick = () => {
+          audio.init();
+          document.getElementById('howToPlayModal').classList.remove('hidden');
+        };
+        document.getElementById('btnCloseHTP').onclick = () => {
+          audio.init();
+          document.getElementById('howToPlayModal').classList.add('hidden');
+        };
         document.getElementById('btnRestart').onclick = () => {
+          audio.init();
           document.getElementById('resultOverlay').classList.add('hidden');
           this.startRound();
         };
@@ -1097,7 +1113,6 @@
           document.getElementById('resTotalTime').innerText = `${this.totalTimeSpent.toFixed(1)} วินาที`;
           document.getElementById('resAvgTime').innerText = `${(this.totalTimeSpent / this.questions.length).toFixed(1)} วิ / ข้อ`;
 
-          // ใส่วันที่และเวลาปัจจุบัน (รูปแบบภาษาไทย)
           const now = new Date();
           const dateStr = now.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
           const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
