@@ -37,7 +37,7 @@
 
     #arPointer {
       position: fixed; top: 0; left: 0; width: 36px; height: 36px;
-      margin-left: -18px; margin-top: -18px; pointer-events: none; z-index: 9999;
+      margin-left: -18px; margin-top: -18px; pointer-events: none; z-index: 99999;
       display: none; transition: transform 0.05s linear;
     }
     #arPointer svg {
@@ -72,6 +72,23 @@
     }
     .screen-overlay.hidden { display: none !important; }
 
+    #howToPlayModal {
+      justify-content: flex-start;
+      align-items: flex-start;
+      background: transparent;
+      backdrop-filter: none;
+      pointer-events: none;
+    }
+    .htp-container {
+      position: absolute;
+      top: 30px;
+      left: 30px;
+      width: min(540px, 48vw);
+      max-height: calc(100vh - 60px);
+      padding: 24px 28px;
+      pointer-events: auto;
+    }
+
     .menu-card {
       background: rgba(11, 20, 53, 0.82);
       backdrop-filter: blur(16px);
@@ -85,9 +102,9 @@
 
     .btn {
       position: relative;
-      display: inline-flex; align-items: center; justify-content: center; gap: 12px;
-      padding: 16px 40px; font-family: var(--font-display); font-size: 1.25rem; font-weight: 800;
-      border: 2px solid rgba(255, 255, 255, 0.85); border-radius: 22px; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 14px 24px; font-family: var(--font-display); font-size: 1.1rem; font-weight: 800;
+      border: 2px solid rgba(255, 255, 255, 0.85); border-radius: 18px; cursor: pointer;
       transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); outline: none;
       box-shadow: 0 10px 25px rgba(0,0,0,0.4);
     }
@@ -97,7 +114,7 @@
     .btn-primary { background: linear-gradient(135deg, #1f9eea, #7044dd); color: #fff; border-color: #83e8ff; }
     .btn-secondary { background: rgba(39, 53, 108, 0.7); color: #e5eaff; border-color: rgba(177, 191, 244, 0.5); }
     .btn-green { background: linear-gradient(135deg, #10b981, #059669); color: #fff; border-color: #6ee7b7; }
-    .btn-sm { padding: 10px 24px; font-size: 1rem; border-radius: 14px; }
+    .btn-sm { padding: 10px 20px; font-size: 0.95rem; border-radius: 14px; }
 
     .game-title {
       font-size: clamp(2.5rem, 6vw, 4.2rem); font-weight: 900; text-align: center;
@@ -113,14 +130,14 @@
       padding: 6px 20px; border-radius: 30px;
     }
 
-    .htp-step { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; font-size: 1.05rem; font-weight: 600; }
+    .htp-step { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 12px; font-size: 0.95rem; font-weight: 600; line-height: 1.4; }
     .htp-num {
-      flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center;
-      background: linear-gradient(135deg, var(--gold), #c98721); color: #111; font-weight: 900; font-size: 1.1rem;
+      flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
+      background: linear-gradient(135deg, var(--gold), #c98721); color: #111; font-weight: 900; font-size: 1rem;
     }
 
     .result-card-epic {
-      text-align: center; padding: 24px 34px; width: min(620px, 94vw);
+      text-align: center; padding: 22px 30px; width: min(640px, 94vw);
       background: linear-gradient(145deg, rgba(20, 35, 85, 0.96), rgba(7, 13, 35, 0.98));
       border: 3.5px solid #ffd700;
       box-shadow: 0 0 60px rgba(255, 215, 0, 0.6), inset 0 0 35px rgba(0, 212, 255, 0.35);
@@ -170,7 +187,7 @@
         <p class="game-subtitle">ภารกิจยิงธนูจำแนก "AI ในชีวิตประจำวัน"</p>
 
         <div style="display:flex; flex-direction:column; gap:16px; width:min(380px, 85vw);">
-          <button class="btn btn-gold hand-interact" id="btnStartGame">🎯 เริ่มเล่นเกม (AR ยิงธนู)</button>
+          <button class="btn btn-gold hand-interact" id="btnStartGame">🎯 เริ่มเล่นเกม</button>
           <button class="btn btn-primary hand-interact" id="btnMousePlay">🖱️ เล่นด้วยเมาส์</button>
           <button class="btn btn-secondary hand-interact" id="btnHowToPlay">📖 วิธีการเล่น</button>
         </div>
@@ -179,16 +196,28 @@
       <div class="creator-tag">By นายพิรสิฏฐ์ พีรภัคโสภณ</div>
     </div>
 
-    <!-- 2. HOW TO PLAY MODAL -->
+    <!-- 2. HOW TO PLAY & PRACTICE TARGET MODAL -->
     <div id="howToPlayModal" class="screen-overlay hidden">
-      <div class="glass-card" style="padding:36px; max-width:600px; width:90%; position:relative;">
-        <h2 style="color:var(--gold); font-size:1.8rem; text-align:center; margin-bottom:20px; font-weight:800;">🏹 วิธียิงธนู AR ที่ถูกต้อง</h2>
-        <div class="htp-step"><div class="htp-num">1</div><div><b>มือซ้าย (ถือคันธนู):</b> ยื่นแขนไปด้านหน้าทางช้อยส์ขวา คันธนูจะลอยอยู่ที่มือนี้</div></div>
-        <div class="htp-step"><div class="htp-num">2</div><div><b>มือขวา (ง้างสายธนู):</b> ✊ <b>กำมือขวา</b> แล้วดึงถอยหลังเข้าหาตัว สายธนูจะง้างออก</div></div>
-        <div class="htp-step"><div class="htp-num">3</div><div><b>ปล่อยยิง:</b> 🖐️ <b>แบมือขวาออก</b> ลูกธนูจะพุ่งตรงไปยังเป้าหมายทันที! (ง้าง > 30%)</div></div>
-        <div class="htp-step"><div class="htp-num">4</div><div><b>เกณฑ์คะแนน:</b> ตอบถูก = 50 คะแนน + โบนัสความเร็ว = สูงสุด 50 คะแนน (เต็ม 1,000)</div></div>
-        <div style="text-align:center; margin-top:24px;">
-          <button class="btn btn-gold btn-sm hand-interact" id="btnCloseHTP">เข้าใจแล้ว ลุยเลย!</button>
+      <div class="glass-card htp-container">
+        <h2 style="color:var(--gold); font-size:1.45rem; text-align:left; margin-bottom:14px; font-weight:800; display:flex; align-items:center; gap:8px;">
+          <span>🏹 วิธีเล่นและสนามซ้อม</span>
+        </h2>
+        <div class="htp-step"><div class="htp-num">1</div><div><b>มือขวา (ถือคันธนู):</b> ยื่นแขนขวาไปด้านหน้าทางเป้าหมาย คันธนูจะลอยอยู่ที่มือนี้</div></div>
+        <div class="htp-step"><div class="htp-num">2</div><div><b>มือซ้าย (ง้างสาย):</b> ✊ <b>กำมือซ้าย</b> แล้วดึงถอยหลังเข้าหาตัวเพื่อง้างสายธนู</div></div>
+        <div class="htp-step"><div class="htp-num">3</div><div><b>ปล่อยยิง:</b> 🖐️ <b>แบมือซ้ายออก</b> ลูกธนูจะพุ่งตรงไปยังเป้าหมายทันที! (ง้าง > 30%)</div></div>
+        <div class="htp-step"><div class="htp-num">4</div><div><b>เกณฑ์คะแนน:</b> ตอบถูก 50 + โบนัสความเร็วสูงสุด 50 (ข้อละ 100 x 10 ข้อ = เต็ม 1,000)</div></div>
+        
+        <div style="background: rgba(0, 212, 255, 0.12); border: 1.5px dashed var(--blue); border-radius: 14px; padding: 8px 12px; margin-top: 8px; font-size: 0.85rem; color: #a5f3fc;">
+          🎯 <b>ยก 2 มือ:</b> ซ้อมยิงเป้าทางขวา | 👆 <b>ยก 1 มือ:</b> ใช้นิ้วชี้เลือกกดปุ่ม
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:16px;">
+          <button class="btn btn-gold btn-sm hand-interact" id="btnCloseHTP" style="flex:1;">
+            🚀 เริ่มเกมเลย!
+          </button>
+          <button class="btn btn-secondary btn-sm hand-interact" id="btnBackToMenu">
+            🏠 เมนูหลัก
+          </button>
         </div>
       </div>
     </div>
@@ -196,13 +225,13 @@
     <!-- 3. EPIC RESULT OVERLAY -->
     <div id="resultOverlay" class="screen-overlay hidden">
       <div id="captureArea" class="glass-card result-card-epic">
-        <div style="font-size: 2.2rem;">👑 🏆 🎊</div>
-        <h2 style="color:var(--gold); font-size:1.5rem; font-weight:900; text-shadow:0 0 20px rgba(255,215,0,0.6);">
+        <div style="font-size: 2rem;">👑 🏆 🎊</div>
+        <h2 style="color:var(--gold); font-size:1.45rem; font-weight:900; text-shadow:0 0 20px rgba(255,215,0,0.6);">
           สรุปผลการทดสอบ AI Tech Match
         </h2>
         <div class="result-rank" id="resultRank">S</div>
 
-        <div style="background:rgba(0,0,0,0.45); border:1.5px solid rgba(255,215,0,0.3); border-radius:18px; padding:12px; margin:8px 0; text-align:left;">
+        <div style="background:rgba(0,0,0,0.45); border:1.5px solid rgba(255,215,0,0.3); border-radius:18px; padding:10px 14px; margin:6px 0; text-align:left;">
           <div class="stat-row" style="background:rgba(0,255,136,0.15); border-left:5px solid var(--neon-green);">
             <span style="font-weight:bold; color:#fff;">คะแนนรวมสุทธิ:</span>
             <span style="font-size:1.25rem; font-weight:900; color:var(--neon-green);" id="resScore">0 / 1000</span>
@@ -223,7 +252,7 @@
             <span style="color:var(--white-dim);">⚡ โบนัสความเร็ว (Speed Bonus):</span>
             <span style="font-weight:bold; color:var(--gold);" id="resSpeedScore">0 / 500</span>
           </div>
-          <div class="stat-row" style="border-top:1px solid rgba(255,255,255,0.15); margin-top:5px; padding-top:5px;">
+          <div class="stat-row" style="border-top:1px solid rgba(255,255,255,0.15); margin-top:4px; padding-top:4px;">
             <span style="color:var(--white-dim);">⏱️ เวลารวมที่ใช้จริง:</span>
             <span style="font-weight:bold; color:#ff7a47;" id="resTotalTime">0.0 วินาที</span>
           </div>
@@ -234,18 +263,21 @@
         </div>
 
         <!-- แถบระบุวันที่และผู้จัดทำ -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin:6px 0 10px; font-size:0.85rem; color:var(--white-dim); padding:0 6px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin:4px 0 8px; font-size:0.82rem; color:var(--white-dim); padding:0 6px;">
           <span>📅 วันที่: <b id="resDateTime" style="color:var(--gold);">-</b></span>
           <span style="color:var(--gold); font-weight:700;">By นายพิรสิฏฐ์ พีรภัคโสภณ</span>
         </div>
 
         <!-- แถบปุ่มควบคุมในหน้าสรุปผล -->
-        <div style="display:flex; justify-content:center; gap:12px; margin-top:6px;" data-html2canvas-ignore="true">
+        <div style="display:flex; justify-content:center; gap:8px; margin-top:4px; flex-wrap:wrap;" data-html2canvas-ignore="true">
           <button class="btn btn-green btn-sm hand-interact" id="btnCaptureScore">
             📸 บันทึกภาพคะแนน
           </button>
           <button class="btn btn-gold btn-sm hand-interact" id="btnRestart">
             🔄 เล่นรอบถัดไป
+          </button>
+          <button class="btn btn-secondary btn-sm hand-interact" id="btnResultToHome">
+            🏠 เมนูหลัก
           </button>
         </div>
       </div>
@@ -254,7 +286,7 @@
 
   <script>
     /* ==========================================================
-       1. QUESTION BANK: 10 สถานการณ์ (มี ID กำกับไฟล์เสียง)
+       1. QUESTION BANK: 10 สถานการณ์
        ========================================================== */
     const AI_QUESTIONS_MASTER = [
       {
@@ -340,7 +372,7 @@
     ];
 
     /* ==========================================================
-       2. AUDIO & SPEECH ENGINE (ระบบเสียง MP3 ภาษาไทย 100%)
+       2. AUDIO & SPEECH ENGINE
        ========================================================== */
     class AudioEngine {
       constructor() {
@@ -459,9 +491,7 @@
         this.stopSpeech();
         try {
           this.onlineAudio.src = `sounds/q${qId}.mp3`;
-          this.onlineAudio.play().catch(err => {
-            console.warn("ไม่พบไฟล์เสียงหรือติดบล็อก:", err);
-          });
+          this.onlineAudio.play().catch(err => console.warn("Audio error:", err));
         } catch(e){}
       }
 
@@ -513,7 +543,7 @@
         this.minPullDist = 50;
         this.maxPullDist = 260;
         this.minReleasePower = 30;
-        this.statusText = 'ยื่นมือซ้ายเพื่อถือคันธนู';
+        this.statusText = 'ยื่นมือขวาเพื่อถือคันธนู';
 
         this.isTransitioning = false;
         this.wasDrawing = false;
@@ -522,6 +552,10 @@
 
         this.arrow = { x: 0, y: 0, vx: 0, vy: 0, flying: false, angle: 0, power: 0 };
         this.targets = [];
+        this.practiceTarget = null;
+        this.practiceHitCount = 0;
+        this.practiceHitFeedback = '';
+
         this.particles = [];
         this.fireworks = [];
 
@@ -544,31 +578,38 @@
         this.canvas.height = window.innerHeight;
         this.minPullDist = Math.max(45, this.canvas.width * 0.04);
         this.maxPullDist = this.canvas.width * 0.26;
+
+        this.practiceTarget = {
+          x: this.canvas.width * 0.76,
+          y: this.canvas.height * 0.50,
+          radius: Math.min(85, this.canvas.width * 0.09)
+        };
       }
 
       bindDOM() {
         document.getElementById('btnStartGame').onclick = () => {
-          audio.init();
           this.mouseMode = false;
           this.startRound();
         };
         document.getElementById('btnMousePlay').onclick = () => {
-          audio.init();
           this.mouseMode = true;
           this.startRound();
         };
         document.getElementById('btnHowToPlay').onclick = () => {
-          audio.init();
-          document.getElementById('howToPlayModal').classList.remove('hidden');
+          this.openHowToPlayPractice();
         };
         document.getElementById('btnCloseHTP').onclick = () => {
-          audio.init();
-          document.getElementById('howToPlayModal').classList.add('hidden');
+          this.startRound();
+        };
+        document.getElementById('btnBackToMenu').onclick = () => {
+          this.openMainMenu();
         };
         document.getElementById('btnRestart').onclick = () => {
-          audio.init();
           document.getElementById('resultOverlay').classList.add('hidden');
           this.startRound();
+        };
+        document.getElementById('btnResultToHome').onclick = () => {
+          this.openMainMenu();
         };
 
         document.getElementById('btnCaptureScore').onclick = () => {
@@ -584,13 +625,43 @@
           this.mouse.x = e.clientX; this.mouse.y = e.clientY;
         });
         window.addEventListener('mouseup', () => {
-          if (this.mouseMode && this.pullPower >= this.minReleasePower && !this.isTransitioning) {
-            this.releaseArrow(this.pullPower, this.aimAngle);
+          if (this.mouseMode && (this.state === 'PLAYING' || this.state === 'HOWTOPLAY')) {
+            if (this.pullPower >= this.minReleasePower && !this.isTransitioning) {
+              this.releaseArrow(this.pullPower, this.aimAngle);
+            }
           }
           this.mouse.down = false;
           this.pullPower = 0;
           this.bowState = 'EQUIPPED';
         });
+      }
+
+      openHowToPlayPractice() {
+        audio.init();
+        this.state = 'HOWTOPLAY';
+        document.getElementById('menuScreen').classList.add('hidden');
+        document.getElementById('howToPlayModal').classList.remove('hidden');
+        document.getElementById('resultOverlay').classList.add('hidden');
+        this.pointerEl.style.display = 'none';
+        this.resetHover();
+        this.bowState = 'IDLE';
+        this.wasDrawing = false;
+        this.isTransitioning = false;
+        this.arrow.flying = false;
+        this.practiceHitFeedback = '';
+        this.statusText = 'ยก 1 มือเพื่อชี้เมนู หรือยก 2 มือเพื่อซ้อมยิงธนู';
+      }
+
+      openMainMenu() {
+        this.state = 'MENU';
+        document.getElementById('menuScreen').classList.remove('hidden');
+        document.getElementById('howToPlayModal').classList.add('hidden');
+        document.getElementById('resultOverlay').classList.add('hidden');
+        audio.stopSpeech();
+        clearInterval(this.timerInterval);
+        this.arrow.flying = false;
+        this.pointerEl.style.display = 'none';
+        this.resetHover();
       }
 
       captureScoreCard() {
@@ -628,8 +699,8 @@
           this.hands.setOptions({
             maxNumHands: 2,
             modelComplexity: 1,
-            minDetectionConfidence: 0.60,
-            minTrackingConfidence: 0.60
+            minDetectionConfidence: 0.50,
+            minTrackingConfidence: 0.50
           });
           this.hands.onResults((res) => this.onHandResults(res));
 
@@ -739,13 +810,22 @@
         if (this.mouseMode) return;
 
         this.currentHandLandmarks = results.multiHandLandmarks || [];
+        const numHands = this.currentHandLandmarks.length;
 
-        if (this.state !== 'PLAYING') {
-          if (this.currentHandLandmarks.length > 0) {
+        // ==========================================
+        // 1. ตรวจจับสำหรับหน้า MENU และ RESULT
+        // ==========================================
+        if (this.state === 'MENU' || this.state === 'RESULT') {
+          if (numHands > 0) {
             const lm = this.currentHandLandmarks[0];
             const indexTip = lm[8];
-            const screenX = (1 - indexTip.x) * window.innerWidth;
-            const screenY = indexTip.y * window.innerHeight;
+
+            // ปรับ Scale ให้กวาดถึงขอบล่างของจอได้ง่ายขึ้นโดยมือไม่ต้องหลุดกล้อง
+            const normalizedX = (1 - indexTip.x);
+            const normalizedY = (indexTip.y - 0.1) / 0.82; // ขยายช่วง Y ให้อยู่ในช่วง 10%-92% ของเฟรมกล้อง
+
+            const screenX = Math.max(10, Math.min(window.innerWidth - 10, normalizedX * window.innerWidth));
+            const screenY = Math.max(10, Math.min(window.innerHeight - 10, normalizedY * window.innerHeight));
 
             this.pointerEl.style.display = 'block';
             this.pointerEl.style.transform = `translate3d(${screenX}px, ${screenY}px, 0)`;
@@ -757,73 +837,166 @@
           return;
         }
 
-        if (this.currentHandLandmarks.length === 0) {
-          if (this.wasDrawing && this.lastDrawnPower >= this.minReleasePower && !this.isTransitioning) {
-            this.releaseArrow(this.lastDrawnPower, this.lastAimAngle);
+        // ==========================================
+        // 2. ตรวจจับสำหรับหน้า HOWTOPLAY
+        // ==========================================
+        if (this.state === 'HOWTOPLAY') {
+          if (numHands === 0) {
+            this.pointerEl.style.display = 'none';
+            this.resetHover();
+            this.bowState = 'IDLE';
+            this.statusText = 'ยก 1 มือเพื่อชี้เมนู หรือยก 2 มือเพื่อซ้อมยิงธนู';
+            return;
           }
-          this.bowState = 'IDLE';
-          this.wasDrawing = false;
-          this.statusText = 'กรุณายกมือขึ้นมาหน้ากล้อง';
-          return;
-        }
 
-        if (this.currentHandLandmarks.length === 1) {
-          if (this.wasDrawing && this.lastDrawnPower >= this.minReleasePower && !this.isTransitioning) {
-            this.releaseArrow(this.lastDrawnPower, this.lastAimAngle);
+          if (numHands === 1) {
+            this.bowState = 'IDLE';
+            this.wasDrawing = false;
+            this.pullPower = 0;
+
+            const lm = this.currentHandLandmarks[0];
+            const indexTip = lm[8];
+
+            const normalizedX = (1 - indexTip.x);
+            const normalizedY = (indexTip.y - 0.1) / 0.82;
+
+            const screenX = Math.max(10, Math.min(window.innerWidth - 10, normalizedX * window.innerWidth));
+            const screenY = Math.max(10, Math.min(window.innerHeight - 10, normalizedY * window.innerHeight));
+
+            this.pointerEl.style.display = 'block';
+            this.pointerEl.style.transform = `translate3d(${screenX}px, ${screenY}px, 0)`;
+            this.processHoverTrigger(screenX, screenY);
+            this.statusText = '👆 ใช้นิ้วชี้เพื่อเลือกปุ่มเมนูด้านล่าง';
+            return;
           }
-          const lm = this.currentHandLandmarks[0];
-          this.bowPos = { x: (1 - lm[9].x) * this.canvas.width, y: lm[9].y * this.canvas.height };
-          this.bowState = 'EQUIPPED';
-          this.pullPower = 0;
-          this.wasDrawing = false;
-          this.statusText = 'ยื่นมือที่ถือธนูไปข้างหน้า แล้วกำมืออีกข้างเพื่อง้างสาย';
-          return;
-        }
 
-        if (this.currentHandLandmarks.length >= 2) {
-          const lm1 = this.currentHandLandmarks[0];
-          const lm2 = this.currentHandLandmarks[1];
+          if (numHands >= 2) {
+            this.pointerEl.style.display = 'none';
+            this.resetHover();
 
-          const p1 = { x: (1 - lm1[9].x) * this.canvas.width, y: lm1[9].y * this.canvas.height, lm: lm1 };
-          const p2 = { x: (1 - lm2[9].x) * this.canvas.width, y: lm2[9].y * this.canvas.height, lm: lm2 };
+            const lm1 = this.currentHandLandmarks[0];
+            const lm2 = this.currentHandLandmarks[1];
 
-          let bow = p1.x > p2.x ? p1 : p2;
-          let pull = p1.x > p2.x ? p2 : p1;
+            const p1 = { x: (1 - lm1[9].x) * this.canvas.width, y: lm1[9].y * this.canvas.height, lm: lm1 };
+            const p2 = { x: (1 - lm2[9].x) * this.canvas.width, y: lm2[9].y * this.canvas.height, lm: lm2 };
 
-          this.bowPos = { x: bow.x, y: bow.y };
-          this.pullPos = { x: pull.x, y: pull.y };
+            let bow = p1.x > p2.x ? p1 : p2;
+            let pull = p1.x > p2.x ? p2 : p1;
 
-          const isFist = this.checkFist(pull.lm);
-          const isOpen = this.checkOpenHand(pull.lm);
+            this.bowPos = { x: bow.x, y: bow.y };
+            this.pullPos = { x: pull.x, y: pull.y };
 
-          this.pullDistance = Math.hypot(bow.x - pull.x, bow.y - pull.y);
-          this.aimAngle = Math.atan2(bow.y - pull.y, bow.x - pull.x);
+            const isFist = this.checkFist(pull.lm);
+            const isOpen = this.checkOpenHand(pull.lm);
 
-          this.pullPower = Math.min(100, Math.max(0,
-            ((this.pullDistance - this.minPullDist) / (this.maxPullDist - this.minPullDist)) * 100
-          ));
+            this.pullDistance = Math.hypot(bow.x - pull.x, bow.y - pull.y);
+            this.aimAngle = Math.atan2(bow.y - pull.y, bow.x - pull.x);
 
-          if (isFist && !this.isTransitioning) {
-            this.lastDrawnPower = this.pullPower;
-            this.lastAimAngle = this.aimAngle;
-            this.wasDrawing = true;
+            this.pullPower = Math.min(100, Math.max(0,
+              ((this.pullDistance - this.minPullDist) / (this.maxPullDist - this.minPullDist)) * 100
+            ));
 
-            if (this.pullPower >= this.minReleasePower) {
-              if (this.bowState !== 'READY' && this.bowState !== 'DRAWING') audio.playArrowDraw();
-              this.bowState = 'READY';
-              this.statusText = `🏹 เล็งเป้าหมายแล้วแบมือขวาเพื่อยิง! [พลัง: ${Math.round(this.pullPower)}%]`;
-            } else {
-              this.bowState = 'DRAWING';
-              this.statusText = `ดึงมือขวาถอยหลังเพื่อเพิ่มแรงง้าง [พลัง: ${Math.round(this.pullPower)}%]`;
+            if (isFist) {
+              this.lastDrawnPower = this.pullPower;
+              this.lastAimAngle = this.aimAngle;
+              this.wasDrawing = true;
+
+              if (this.pullPower >= this.minReleasePower) {
+                if (this.bowState !== 'READY' && this.bowState !== 'DRAWING') audio.playArrowDraw();
+                this.bowState = 'READY';
+                this.statusText = `🏹 เล็งเป้าซ้อมแล้วแบมือซ้ายเพื่อยิง! [พลัง: ${Math.round(this.pullPower)}%]`;
+              } else {
+                this.bowState = 'DRAWING';
+                this.statusText = `ดึงมือซ้ายถอยหลังเพื่อเพิ่มแรงง้าง [พลัง: ${Math.round(this.pullPower)}%]`;
+              }
+            } else if (isOpen || !isFist) {
+              if (this.wasDrawing && this.lastDrawnPower >= this.minReleasePower) {
+                this.releaseArrow(this.lastDrawnPower, this.lastAimAngle);
+              }
+              this.bowState = 'EQUIPPED';
+              this.pullPower = 0;
+              this.wasDrawing = false;
+              this.statusText = 'กำมือซ้ายและดึงถอยหลังเพื่อง้างสายธนู';
             }
-          } else if (isOpen || !isFist) {
+            return;
+          }
+        }
+
+        // ==========================================
+        // 3. ตรวจจับสำหรับหน้า PLAYING
+        // ==========================================
+        if (this.state === 'PLAYING') {
+          this.pointerEl.style.display = 'none';
+          this.resetHover();
+
+          if (numHands === 0) {
             if (this.wasDrawing && this.lastDrawnPower >= this.minReleasePower && !this.isTransitioning) {
               this.releaseArrow(this.lastDrawnPower, this.lastAimAngle);
             }
+            this.bowState = 'IDLE';
+            this.wasDrawing = false;
+            this.statusText = 'กรุณายกมือขึ้นมาหน้ากล้อง';
+            return;
+          }
+
+          if (numHands === 1) {
+            if (this.wasDrawing && this.lastDrawnPower >= this.minReleasePower && !this.isTransitioning) {
+              this.releaseArrow(this.lastDrawnPower, this.lastAimAngle);
+            }
+            const lm = this.currentHandLandmarks[0];
+            this.bowPos = { x: (1 - lm[9].x) * this.canvas.width, y: lm[9].y * this.canvas.height };
             this.bowState = 'EQUIPPED';
             this.pullPower = 0;
             this.wasDrawing = false;
-            this.statusText = 'กำมือขวาและดึงถอยหลังเพื่อง้างสายธนู';
+            this.statusText = 'ยื่นมือขวาเพื่อถือคันธนู แล้วกำมือซ้ายเพื่อง้างสาย';
+            return;
+          }
+
+          if (numHands >= 2) {
+            const lm1 = this.currentHandLandmarks[0];
+            const lm2 = this.currentHandLandmarks[1];
+
+            const p1 = { x: (1 - lm1[9].x) * this.canvas.width, y: lm1[9].y * this.canvas.height, lm: lm1 };
+            const p2 = { x: (1 - lm2[9].x) * this.canvas.width, y: lm2[9].y * this.canvas.height, lm: lm2 };
+
+            let bow = p1.x > p2.x ? p1 : p2;
+            let pull = p1.x > p2.x ? p2 : p1;
+
+            this.bowPos = { x: bow.x, y: bow.y };
+            this.pullPos = { x: pull.x, y: pull.y };
+
+            const isFist = this.checkFist(pull.lm);
+            const isOpen = this.checkOpenHand(pull.lm);
+
+            this.pullDistance = Math.hypot(bow.x - pull.x, bow.y - pull.y);
+            this.aimAngle = Math.atan2(bow.y - pull.y, bow.x - pull.x);
+
+            this.pullPower = Math.min(100, Math.max(0,
+              ((this.pullDistance - this.minPullDist) / (this.maxPullDist - this.minPullDist)) * 100
+            ));
+
+            if (isFist && !this.isTransitioning) {
+              this.lastDrawnPower = this.pullPower;
+              this.lastAimAngle = this.aimAngle;
+              this.wasDrawing = true;
+
+              if (this.pullPower >= this.minReleasePower) {
+                if (this.bowState !== 'READY' && this.bowState !== 'DRAWING') audio.playArrowDraw();
+                this.bowState = 'READY';
+                this.statusText = `🏹 เล็งเป้าหมายแล้วแบมือซ้ายเพื่อยิง! [พลัง: ${Math.round(this.pullPower)}%]`;
+              } else {
+                this.bowState = 'DRAWING';
+                this.statusText = `ดึงมือซ้ายถอยหลังเพื่อเพิ่มแรงง้าง [พลัง: ${Math.round(this.pullPower)}%]`;
+              }
+            } else if (isOpen || !isFist) {
+              if (this.wasDrawing && this.lastDrawnPower >= this.minReleasePower && !this.isTransitioning) {
+                this.releaseArrow(this.lastDrawnPower, this.lastAimAngle);
+              }
+              this.bowState = 'EQUIPPED';
+              this.pullPower = 0;
+              this.wasDrawing = false;
+              this.statusText = 'กำมือซ้ายและดึงถอยหลังเพื่อง้างสายธนู';
+            }
           }
         }
       }
@@ -943,14 +1116,14 @@
           power: power,
           flying: true
         };
-        this.shotsFired++;
+        if (this.state === 'PLAYING') this.shotsFired++;
         audio.playArrowRelease();
         this.wasDrawing = false;
         this.lastDrawnPower = 0;
       }
 
       updatePhysics() {
-        if (this.mouseMode && this.state === 'PLAYING') {
+        if (this.mouseMode && (this.state === 'PLAYING' || this.state === 'HOWTOPLAY')) {
           const bowOrigin = { x: this.canvas.width * 0.24, y: this.canvas.height * 0.65 };
           this.bowPos = bowOrigin;
           this.pullPos = { x: this.mouse.x, y: this.mouse.y };
@@ -960,11 +1133,11 @@
             const dist = Math.hypot(this.mouse.x - bowOrigin.y, this.mouse.y - bowOrigin.y);
             this.pullPower = Math.min(100, Math.max(0, (dist / (this.maxPullDist * 0.8)) * 100));
             this.bowState = this.pullPower >= this.minReleasePower ? 'READY' : 'DRAWING';
-            this.statusText = `ลากเมาส์เล็งช้อยส์ขวามือ แล้วปล่อยเพื่อยิง [พลัง: ${Math.round(this.pullPower)}%]`;
+            this.statusText = `ลากเมาส์เล็งเป้าหมาย แล้วปล่อยเพื่อยิง [พลัง: ${Math.round(this.pullPower)}%]`;
           } else {
             this.bowState = 'EQUIPPED';
             this.pullPower = 0;
-            this.statusText = 'คลิกค้างแล้วลากเมาส์ไปทางช้อยส์ขวาเพื่อเล็ง';
+            this.statusText = 'คลิกค้างแล้วลากเมาส์ไปทางขวาเพื่อเล็ง';
           }
         }
 
@@ -986,7 +1159,7 @@
             });
           }
 
-          if (!this.isTransitioning) {
+          if (this.state === 'PLAYING' && !this.isTransitioning) {
             for (let target of this.targets) {
               if (this.arrow.x >= target.x && this.arrow.x <= target.x + target.w &&
                   this.arrow.y >= target.y && this.arrow.y <= target.y + target.h) {
@@ -997,9 +1170,17 @@
             }
           }
 
+          if (this.state === 'HOWTOPLAY' && this.practiceTarget) {
+            const distToPractice = Math.hypot(this.arrow.x - this.practiceTarget.x, this.arrow.y - this.practiceTarget.y);
+            if (distToPractice <= this.practiceTarget.radius) {
+              this.onHitPracticeTarget();
+              this.arrow.flying = false;
+            }
+          }
+
           if (this.arrow.x > this.canvas.width + 80 || this.arrow.y > this.canvas.height + 80) {
             this.arrow.flying = false;
-            this.combo = 0;
+            if (this.state === 'PLAYING') this.combo = 0;
           }
         }
 
@@ -1012,6 +1193,14 @@
           f.x += f.vx; f.y += f.vy; f.vy += 0.05; f.life--;
           return f.life > 0;
         });
+      }
+
+      onHitPracticeTarget() {
+        this.practiceHitCount++;
+        audio.playCorrectHit();
+        this.createBurst(this.practiceTarget.x, this.practiceTarget.y, '#ffd700', 30);
+        this.createBurst(this.practiceTarget.x, this.practiceTarget.y, '#00ff88', 20);
+        this.practiceHitFeedback = `🎯 ยอดเยี่ยม! ยิงโดนเป้าซ้อมแล้ว (${this.practiceHitCount} ดอก)`;
       }
 
       onHitTarget(target) {
@@ -1136,8 +1325,17 @@
           this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         }
 
-        if (!this.mouseMode && this.state !== 'PLAYING' && this.currentHandLandmarks.length > 0) {
+        if (!this.mouseMode && (this.state === 'MENU' || this.state === 'RESULT' || this.state === 'HOWTOPLAY') && this.currentHandLandmarks.length > 0) {
           this.drawHandSkeletons(this.ctx, this.currentHandLandmarks, this.canvas.width, this.canvas.height);
+        }
+
+        if (this.state === 'HOWTOPLAY') {
+          this.renderPracticeTarget();
+          if (this.bowState !== 'IDLE') {
+            this.renderCyberBowAndStrings();
+          }
+          this.renderPlasmaArrow();
+          this.renderParticles();
         }
 
         if (this.state === 'PLAYING') {
@@ -1160,6 +1358,73 @@
           }
           this.ctx.shadowBlur = 0;
         }
+      }
+
+      renderPracticeTarget() {
+        if (!this.practiceTarget) return;
+        const pt = this.practiceTarget;
+
+        this.ctx.save();
+        this.ctx.shadowColor = 'rgba(0, 212, 255, 0.6)';
+        this.ctx.shadowBlur = 20;
+
+        this.ctx.fillStyle = '#00d4ff';
+        this.ctx.beginPath();
+        this.ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#ff4444';
+        this.ctx.beginPath();
+        this.ctx.arc(pt.x, pt.y, pt.radius * 0.72, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.arc(pt.x, pt.y, pt.radius * 0.45, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#ffd700';
+        this.ctx.beginPath();
+        this.ctx.arc(pt.x, pt.y, pt.radius * 0.22, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 4;
+        this.ctx.beginPath();
+        this.ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        this.ctx.shadowBlur = 0;
+
+        this.ctx.fillStyle = '#ffd700';
+        this.ctx.font = "900 20px 'Prompt', 'Orbitron'";
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText("🎯 เป้าซ้อมยิงธนู AR", pt.x, pt.y - pt.radius - 20);
+
+        if (this.practiceHitFeedback) {
+          this.ctx.fillStyle = '#00ff88';
+          this.ctx.font = "bold 17px 'Prompt'";
+          this.ctx.fillText(this.practiceHitFeedback, pt.x, pt.y + pt.radius + 32);
+        } else {
+          this.ctx.fillStyle = '#ffffff';
+          this.ctx.font = "600 15px 'Prompt'";
+          this.ctx.fillText("ง้างมือซ้ายแล้วปล่อยใส่เป้านี้เลย!", pt.x, pt.y + pt.radius + 30);
+        }
+
+        this.ctx.fillStyle = 'rgba(11, 20, 53, 0.94)';
+        this.ctx.strokeStyle = 'rgba(255, 215, 0, 0.7)';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.roundRect(30, this.canvas.height - 65, Math.min(540, this.canvas.width * 0.48), 48, [16]);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = this.pullPower >= this.minReleasePower ? '#00ff88' : '#ffd700';
+        this.ctx.font = "bold 17px 'Prompt'";
+        this.ctx.textAlign = 'left';
+        this.ctx.fillText(this.statusText, 48, this.canvas.height - 34);
+
+        this.ctx.restore();
       }
 
       renderHUD() {
