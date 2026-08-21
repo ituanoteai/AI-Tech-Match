@@ -254,10 +254,11 @@
 
   <script>
     /* ==========================================================
-       1. QUESTION BANK: 10 สถานการณ์
+       1. QUESTION BANK: 10 สถานการณ์ (มี ID กำกับไฟล์เสียง)
        ========================================================== */
     const AI_QUESTIONS_MASTER = [
       {
+        id: 1,
         title: "รถยนต์ไร้คนขับ (Tesla Autopilot)",
         scenario: "รถยนต์ตรวจจับคนข้ามถนน ป้ายจราจร และควบคุมพวงมาลัยหลบหลีกอัตโนมัติ",
         emoji: "🚗⚡",
@@ -265,6 +266,7 @@
         wrongText: "❌ ไม่ใช่เทคโนโลยี AI"
       },
       {
+        id: 2,
         title: "แอป Google Translate (สแกนป้ายแปลภาษา)",
         scenario: "ใช้กล้องมือถือส่องป้ายภาษาต่างประเทศ แล้วตัวหนังสือเปลี่ยนเป็นภาษาไทยทันทีบนหน้าจอ",
         emoji: "📷🌐",
@@ -272,6 +274,7 @@
         wrongText: "❌ ไม่ใช่เทคโนโลยี AI"
       },
       {
+        id: 3,
         title: "ระบบ Face ID สแกนใบหน้าปลดล็อกมือถือ",
         scenario: "สแกนโครงหน้า 3 มิติเพื่อยืนยันตัวตน แม้สวมแว่นตาหรืออยู่ในที่มืด",
         emoji: "📱👤",
@@ -279,6 +282,7 @@
         wrongText: "❌ ไม่ใช่เทคโนโลยี AI"
       },
       {
+        id: 4,
         title: "การแนะนำภาพยนตร์บน Netflix และ YouTube",
         scenario: "ระบบจัดหน้าฟีดแนะนำหนังและเพลงใหม่ๆ ตรงตามแนวที่คุณชอบดูเป็นประจำ",
         emoji: "🎬🍿",
@@ -286,6 +290,7 @@
         wrongText: "❌ ไม่ใช่เทคโนโลยี AI"
       },
       {
+        id: 5,
         title: "เครื่องคิดเลขธรรมดา (กดปุ่มบวกลบคูณหาร)",
         scenario: "กดปุ่ม 5 + 5 แล้วหน้าจอดิจิทัลแสดงผลลัพธ์เป็น 10 ทันที",
         emoji: "🔢🖩",
@@ -293,6 +298,7 @@
         wrongText: "✅ ใช้เทคโนโลยี AI"
       },
       {
+        id: 6,
         title: "ระบบคัดกรองสแปมอีเมล ใน Gmail",
         scenario: "ตรวจจับและแยกจดหมายหลอกลวงหรือโฆษณาอันตรายเข้าถังขยะอัตโนมัติ",
         emoji: "📧🛡️",
@@ -300,6 +306,7 @@
         wrongText: "❌ ไม่ใช่เทคโนโลยี AI"
       },
       {
+        id: 7,
         title: "ไฟฉายหลอด LED ส่องสว่าง",
         scenario: "เลื่อนสวิตช์เปิด-ปิด แล้วหลอดไฟติดให้แสงสว่าง",
         emoji: "🔦💡",
@@ -307,6 +314,7 @@
         wrongText: "✅ ใช้เทคโนโลยี AI"
       },
       {
+        id: 8,
         title: "แชตบอต ChatGPT และ Gemini โต้ตอบตอบคำถาม",
         scenario: "สามารถคุยตอบคำถาม เขียนบทความ และแต่งกลอนภาษาไทยได้อย่างลื่นไหล",
         emoji: "🤖💬",
@@ -314,6 +322,7 @@
         wrongText: "❌ ไม่ใช่เทคโนโลยี AI"
       },
       {
+        id: 9,
         title: "เครื่องสแกนบาร์โค้ดสินค้าใน 7-Eleven",
         scenario: "ยิงเลเซอร์สีแดงทาบลงบนแถบเส้นบาร์โค้ด แล้วรหัสตัวเลขส่งเข้าเครื่องคิดเงิน",
         emoji: "🏪🏷️",
@@ -321,6 +330,7 @@
         wrongText: "✅ ใช้เทคโนโลยี AI"
       },
       {
+        id: 10,
         title: "ระบบโฟกัสและจับใบหน้าอัตโนมัติในกล้องมือถือ",
         scenario: "ยกกล้องมือถือขึ้นมาแล้วมีกรอบสีเหลืองติดตามใบหน้าและปรับแสงให้อัตโนมัติ",
         emoji: "📸✨",
@@ -330,14 +340,12 @@
     ];
 
     /* ==========================================================
-       2. AUDIO & SPEECH ENGINE (ระบบเสียงภาษาไทยเสถียร 100%)
+       2. AUDIO & SPEECH ENGINE (ระบบเสียง MP3 ภาษาไทย 100%)
        ========================================================== */
     class AudioEngine {
       constructor() {
         this.ctx = null;
         this.onlineAudio = new Audio();
-        this.thaiVoice = null;
-        this.loadLocalVoices();
       }
 
       init() {
@@ -347,22 +355,6 @@
           }
           if (this.ctx.state === 'suspended') this.ctx.resume();
         } catch(e){}
-        this.loadLocalVoices();
-      }
-
-      loadLocalVoices() {
-        if ('speechSynthesis' in window) {
-          const findVoice = () => {
-            const voices = window.speechSynthesis.getVoices();
-            this.thaiVoice = voices.find(v => 
-              v.lang === 'th-TH' || 
-              v.lang === 'th_TH' || 
-              v.lang.toLowerCase().startsWith('th')
-            ) || null;
-          };
-          findVoice();
-          window.speechSynthesis.onvoiceschanged = findVoice;
-        }
       }
 
       playHoverTick() {
@@ -463,33 +455,12 @@
         } catch(e){}
       }
 
-      speakQuestion(text) {
+      speakQuestion(qId) {
         this.stopSpeech();
-
-        // 1. ถ้าเครื่องมี Voice ภาษาไทย ให้ใช้ SpeechSynthesis ของระบบ
-        if (this.thaiVoice && 'speechSynthesis' in window) {
-          try {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.voice = this.thaiVoice;
-            utterance.lang = 'th-TH';
-            utterance.rate = 1.0;
-            window.speechSynthesis.speak(utterance);
-            return;
-          } catch(e){}
-        }
-
-        // 2. ถ้าเครื่องไม่มี Voice ภาษาไทย ให้ดึงเสียงภาษาไทยแท้ผ่าน Cloud TTS Stream
         try {
-          const cleanText = text.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').trim();
-          const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText)}&tl=th&client=tw-ob`;
-          this.onlineAudio.src = ttsUrl;
+          this.onlineAudio.src = `sounds/q${qId}.mp3`;
           this.onlineAudio.play().catch(err => {
-            // สำรองสุดท้ายหากติดบล็อกออนไลน์
-            if ('speechSynthesis' in window) {
-              const u = new SpeechSynthesisUtterance(text);
-              u.lang = 'th-TH';
-              window.speechSynthesis.speak(u);
-            }
+            console.warn("ไม่พบไฟล์เสียงหรือติดบล็อก:", err);
           });
         } catch(e){}
       }
@@ -498,9 +469,6 @@
         if (this.onlineAudio) {
           this.onlineAudio.pause();
           this.onlineAudio.currentTime = 0;
-        }
-        if ('speechSynthesis' in window) {
-          try { window.speechSynthesis.cancel(); } catch(e){}
         }
       }
     }
@@ -749,7 +717,7 @@
           }
         }, 100);
 
-        audio.speakQuestion(`${q.title}. ${q.scenario}`);
+        audio.speakQuestion(q.id);
       }
 
       onTimeOut() {
