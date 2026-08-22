@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard - AI Tech Match Analytics</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;600;700&family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <style>
+        * { font-family: 'Prompt', 'Mali', sans-serif; }
+        body { background: #070b1d; color: #ffffff; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto space-y-6">
+        <header class="bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 text-white p-6 rounded-3xl shadow-xl border border-cyan-500/40 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-black bg-gradient-to-r from-yellow-300 via-amber-200 to-cyan-400 bg-clip-text text-transparent">
+                    🏹 Dashboard วิเคราะห์ผลการเรียนรู้ AI Tech Match (AR Archery)
+                </h1>
+                <p class="text-cyan-200 text-sm mt-1">
+                    รายงานสรุปผลสัมฤทธิ์รายบุคคล & ค่าความยากง่าย/อำนาจจำแนกข้อสอบ Realtime 10 สถานการณ์
+                </p>
+                <p class="text-xs font-bold text-yellow-300 mt-2 bg-indigo-900/80 inline-block px-3 py-1 rounded-full border border-yellow-400/40">
+                    จัดทำโดย: นายพิรสิฏฐ์ พีรภัคโสภณ
+                </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="flex items-center space-x-2 bg-indigo-900/90 px-3 py-2 rounded-2xl border border-cyan-400/50">
+                    <label class="font-bold text-xs md:text-sm text-cyan-200">กรองห้องเรียน:</label>
+                    <select id="filterClass" onchange="applyFilter()" class="bg-gray-900 text-yellow-300 font-bold px-3 py-1 rounded-xl text-xs md:text-sm border border-cyan-400/60 focus:outline-none">
+                        <option value="ALL">ทั้งหมดทุกห้อง</option>
+                        <option value="ม.6/1">ม.6/1</option>
+                        <option value="ม.6/2">ม.6/2</option>
+                        <option value="ม.6/3">ม.6/3</option>
+                        <option value="ม.6/4">ม.6/4</option>
+                        <option value="ม.6/5">ม.6/5</option>
+                    </select>
+                </div>
+
+                <button onclick="confirmClearDatabase()" class="bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold px-4 py-2 rounded-2xl text-xs md:text-sm shadow-md border border-white/60 transition flex items-center space-x-1">
+                    <span>🗑️ เคลียร์ฐานข้อมูล</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- KPI Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-slate-900/80 p-5 rounded-2xl border border-cyan-500/30 shadow-sm text-center">
+                <div class="text-gray-400 text-xs font-bold">จำนวนผู้เข้าทดสอบทั้งหมด</div>
+                <div id="statTotalStudents" class="text-3xl font-black text-cyan-400 mt-1">0</div>
+            </div>
+            <div class="bg-slate-900/80 p-5 rounded-2xl border border-cyan-500/30 shadow-sm text-center">
+                <div class="text-gray-400 text-xs font-bold">คะแนนเฉลี่ยรวม (Mean)</div>
+                <div id="statAvgScore" class="text-3xl font-black text-yellow-400 mt-1">0.0 / 1000</div>
+            </div>
+            <div class="bg-slate-900/80 p-5 rounded-2xl border border-cyan-500/30 shadow-sm text-center">
+                <div class="text-gray-400 text-xs font-bold">คะแนนสูงสุด (Max Score)</div>
+                <div id="statMaxScore" class="text-3xl font-black text-emerald-400 mt-1">0</div>
+            </div>
+            <div class="bg-slate-900/80 p-5 rounded-2xl border border-cyan-500/30 shadow-sm text-center">
+                <div class="text-gray-400 text-xs font-bold">ความแม่นยำเฉลี่ย (Accuracy)</div>
+                <div id="statAvgAccuracy" class="text-3xl font-black text-pink-400 mt-1">0%</div>
+            </div>
+        </div>
+
+        <!-- Item Analysis Table -->
+        <section class="bg-slate-900/90 p-6 rounded-3xl border border-cyan-500/30 shadow-sm space-y-4">
+            <h2 class="text-lg font-bold text-cyan-300 flex items-center justify-between">
+                <span>📈 ตารางวิเคราะห์คุณภาพตัวข้อสอบ Realtime (Item Analysis)</span>
+                <span class="text-xs font-normal text-gray-400">*คำนวณตามสูตรสถิติทางการศึกษา (Difficulty Index & Discrimination Power)</span>
+            </h2>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs md:text-sm">
+                    <thead>
+                        <tr class="bg-slate-800 text-cyan-200 font-bold border-b border-cyan-500/30">
+                            <th class="p-3">ข้อที่</th>
+                            <th class="p-3">สถานการณ์เทคโนโลยี</th>
+                            <th class="p-3">อัตราความยากง่าย (P)</th>
+                            <th class="p-3">แปลผลความยาก</th>
+                            <th class="p-3">อำนาจจำแนก (r)</th>
+                            <th class="p-3">คุณภาพข้อสอบ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemAnalysisTable" class="divide-y divide-slate-800"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Student Matrix Table -->
+        <section class="bg-slate-900/90 p-6 rounded-3xl border border-cyan-500/30 shadow-sm space-y-4">
+            <h2 class="text-lg font-bold text-cyan-300">📑 รายงานการตอบถูก-ผิด รายบุคคล (Student Matrix 10 ข้อ)</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-800 text-gray-300 font-bold">
+                            <th class="p-2 border border-slate-700">ห้อง/เลขที่</th>
+                            <th class="p-2 border border-slate-700">ชื่อ-นามสกุล</th>
+                            <th class="p-2 border border-slate-700">คะแนนสุทธิ</th>
+                            <th class="p-2 border border-slate-700">Rank</th>
+                            <th class="p-2 border border-slate-700">ความแม่นยำ</th>
+                            <th class="p-2 border border-slate-700">เวลา (วิ)</th>
+                            <script>
+                                for(let i=1; i<=10; i++) document.write(`<th class="p-1 border border-slate-700 text-center font-semibold">ข้อ${i}</th>`);
+                            </script>
+                        </tr>
+                    </thead>
+                    <tbody id="studentMatrixTable" class="divide-y divide-slate-800"></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            databaseURL: "https://ai-tech-match-default-rtdb.asia-southeast1.firebasedatabase.app"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const ITEM_TITLES = [
+            "Tesla Autopilot",
+            "Google Translate",
+            "Face ID Scanner",
+            "Netflix/YouTube Feed",
+            "เครื่องคิดเลขทั่วไป",
+            "Gmail Spam Filter",
+            "ไฟฉายหลอด LED",
+            "ChatGPT / Gemini",
+            "เครื่องสแกนบาร์โค้ด",
+            "กล้องมือถือ Face Auto-focus"
+        ];
+
+        let allData = [];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            // ดึงข้อมูลจากโหนด student_results แบบ Realtime
+            db.ref('student_results').on('value', (snapshot) => {
+                const raw = snapshot.val();
+                allData = [];
+                if (raw) {
+                    Object.keys(raw).forEach(k => allData.push(raw[k]));
+                    allData.sort((a, b) => (b.score || 0) - (a.score || 0));
+                }
+                applyFilter();
+            }, (error) => {
+                console.error("Firebase Read Error:", error);
+            });
+        });
+
+        function applyFilter() {
+            const cls = document.getElementById('filterClass').value;
+            const filtered = cls === "ALL" ? allData : allData.filter(d => d.studentClass === cls);
+            
+            renderOverview(filtered);
+            renderItemAnalysis(filtered);
+            renderStudentMatrix(filtered);
+        }
+
+        function renderOverview(data) {
+            document.getElementById('statTotalStudents').innerText = data.length;
+            if (data.length === 0) {
+                document.getElementById('statAvgScore').innerText = "0.0 / 1000";
+                document.getElementById('statMaxScore').innerText = "0";
+                document.getElementById('statAvgAccuracy').innerText = "0%";
+                return;
+            }
+            const scores = data.map(d => Number(d.score) || 0);
+            const sum = scores.reduce((a, b) => a + b, 0);
+            document.getElementById('statAvgScore').innerText = (sum / data.length).toFixed(1) + " / 1000";
+            document.getElementById('statMaxScore').innerText = Math.max(...scores);
+
+            const accs = data.map(d => Number(d.accuracy) || 0);
+            const avgAcc = accs.reduce((a, b) => a + b, 0) / data.length;
+            document.getElementById('statAvgAccuracy').innerText = avgAcc.toFixed(1) + "%";
+        }
+
+        function renderItemAnalysis(data) {
+            const tbody = document.getElementById('itemAnalysisTable');
+            tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">ยังไม่มีข้อมูลผู้เข้าสอบในระบบ</td></tr>`;
+                return;
+            }
+
+            const N = data.length;
+            const sorted = [...data].sort((a,b) => (Number(b.score) || 0) - (Number(a.score) || 0));
+            const nGroup = Math.max(1, Math.floor(N * 0.27));
+            const highGroup = sorted.slice(0, nGroup);
+            const lowGroup = sorted.slice(N - nGroup);
+
+            for (let i = 1; i <= 10; i++) {
+                const qKey = `q_${i}`;
+                const totalCorrect = data.filter(d => d.itemResponses && d.itemResponses[qKey] === 1).length;
+                const P = totalCorrect / N;
+
+                const H = highGroup.filter(d => d.itemResponses && d.itemResponses[qKey] === 1).length;
+                const L = lowGroup.filter(d => d.itemResponses && d.itemResponses[qKey] === 1).length;
+                const r = (H - L) / nGroup;
+
+                let pText = "", pColor = "";
+                if (P < 0.2) { pText = "ยากมาก"; pColor = "text-red-400"; }
+                else if (P <= 0.8) { pText = "พอเหมาะ"; pColor = "text-emerald-400 font-bold"; }
+                else { pText = "ง่ายมาก"; pColor = "text-amber-400"; }
+
+                let qQuality = "", qColor = "";
+                if (r >= 0.2 && P >= 0.2 && P <= 0.8) { qQuality = "คัดเลือกไว้ใช้ได้"; qColor = "bg-emerald-950 text-emerald-300 border border-emerald-500/40"; }
+                else { qQuality = "ควรปรับปรุงข้อสอบ"; qColor = "bg-rose-950 text-rose-300 border border-rose-500/40"; }
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-800/60";
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-cyan-400">ข้อที่ ${i}</td>
+                    <td class="p-3 font-semibold text-gray-300">${ITEM_TITLES[i-1]}</td>
+                    <td class="p-3 font-mono">${P.toFixed(2)}</td>
+                    <td class="p-3 ${pColor}">${pText}</td>
+                    <td class="p-3 font-mono">${r.toFixed(2)}</td>
+                    <td class="p-3"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${qColor}">${qQuality}</span></td>
+                `;
+                tbody.appendChild(tr);
+            }
+        }
+
+        function renderStudentMatrix(data) {
+            const tbody = document.getElementById('studentMatrixTable');
+            tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="16" class="p-4 text-center text-gray-500">ยังไม่มีข้อมูลคะแนนนักเรียน</td></tr>`;
+                return;
+            }
+
+            data.forEach(s => {
+                const tr = document.createElement('tr');
+                let itemsHtml = '';
+                for (let i = 1; i <= 10; i++) {
+                    const ans = (s.itemResponses && s.itemResponses[`q_${i}`] === 1);
+                    itemsHtml += `<td class="p-1 border border-slate-800 text-center font-bold ${ans?'bg-emerald-950/60 text-emerald-400':'bg-rose-950/60 text-rose-400'}">${ans?'✓':'✗'}</td>`;
+                }
+
+                let rankBadge = 'bg-slate-700 text-white';
+                if (s.rank === 'S') rankBadge = 'bg-amber-400 text-black font-black';
+                else if (s.rank === 'A') rankBadge = 'bg-cyan-500 text-black font-bold';
+                else if (s.rank === 'B') rankBadge = 'bg-emerald-500 text-black font-bold';
+
+                tr.innerHTML = `
+                    <td class="p-2 border border-slate-800 font-bold text-cyan-300">${s.studentClass || '-'} / ${s.studentNo || '-'}</td>
+                    <td class="p-2 border border-slate-800 font-semibold text-gray-200">${s.name || '-'}</td>
+                    <td class="p-2 border border-slate-800 font-black text-yellow-300">${s.score || 0}</td>
+                    <td class="p-2 border border-slate-800 text-center"><span class="px-2 py-0.5 rounded-md text-xs ${rankBadge}">${s.rank || '-'}</span></td>
+                    <td class="p-2 border border-slate-800 font-mono text-cyan-200">${s.accuracy || 0}%</td>
+                    <td class="p-2 border border-slate-800 font-mono text-gray-300">${s.totalTime || 0}</td>
+                    ${itemsHtml}
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function confirmClearDatabase() {
+            const userInput = prompt("⚠️ คำเตือน: คุณกำลังจะลบข้อมูลผลการทดสอบ AI Tech Match ทั้งหมด!\nหากต้องการลบจริงๆ โปรดพิมพ์คำว่า 'DELETE' ด้านล่างเพื่อยืนยัน:");
+            
+            if (userInput === "DELETE") {
+                db.ref('student_results').remove()
+                    .then(() => {
+                        localStorage.removeItem('ai_tech_match_results');
+                        alert("✅ เคลียร์ฐานข้อมูล AI Tech Match สำเร็จเรียบร้อยแล้ว!");
+                    })
+                    .catch((error) => {
+                        console.error("Clear database failed:", error);
+                        alert("❌ ไม่สามารถลบข้อมูลได้: " + error.message);
+                    });
+            } else if (userInput !== null) {
+                alert("❌ พิมพ์คำยืนยันไม่ถูกต้อง ระบบยกเลิกการลบข้อมูล");
+            }
+        }
+    </script>
+</body>
+</html>

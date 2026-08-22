@@ -13,6 +13,10 @@
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
+  <!-- Firebase Realtime Database SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
   <style>
     :root {
       --bg-primary: #070b1d;
@@ -90,21 +94,22 @@
     }
 
     .menu-card {
-      background: rgba(11, 20, 53, 0.82);
+      background: rgba(11, 20, 53, 0.88);
       backdrop-filter: blur(16px);
       border: 3px solid rgba(0, 212, 255, 0.4);
       border-radius: 28px;
-      padding: 32px 48px;
+      padding: 28px 40px;
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 212, 255, 0.2);
       text-align: center;
       display: flex; flex-direction: column; align-items: center;
+      max-width: 460px; width: 92vw;
     }
 
     .btn {
       position: relative;
       display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 14px 24px; font-family: var(--font-display); font-size: 1.1rem; font-weight: 800;
-      border: 2px solid rgba(255, 255, 255, 0.85); border-radius: 18px; cursor: pointer;
+      padding: 12px 24px; font-family: var(--font-display); font-size: 1.15rem; font-weight: 800;
+      border: 2px solid rgba(255, 255, 255, 0.85); border-radius: 20px; cursor: pointer;
       transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); outline: none;
       box-shadow: 0 10px 25px rgba(0,0,0,0.4);
     }
@@ -114,20 +119,21 @@
     .btn-primary { background: linear-gradient(135deg, #1f9eea, #7044dd); color: #fff; border-color: #83e8ff; }
     .btn-secondary { background: rgba(39, 53, 108, 0.7); color: #e5eaff; border-color: rgba(177, 191, 244, 0.5); }
     .btn-green { background: linear-gradient(135deg, #10b981, #059669); color: #fff; border-color: #6ee7b7; }
-    .btn-sm { padding: 10px 20px; font-size: 0.95rem; border-radius: 14px; }
+    .btn-purple { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; border-color: #c4b5fd; }
+    .btn-sm { padding: 9px 16px; font-size: 0.9rem; border-radius: 14px; }
 
     .game-title {
-      font-size: clamp(2.5rem, 6vw, 4.2rem); font-weight: 900; text-align: center;
+      font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 900; text-align: center;
       background: linear-gradient(135deg, #fff8da 0%, var(--gold) 40%, var(--blue) 100%);
       -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 0 25px rgba(0, 212, 255, 0.5)); margin-bottom: 8px;
+      filter: drop-shadow(0 0 25px rgba(0, 212, 255, 0.5)); margin-bottom: 4px;
     }
-    .game-subtitle { color: var(--white-dim); font-size: 1.15rem; margin-bottom: 24px; text-align: center; font-weight: 600; }
+    .game-subtitle { color: var(--white-dim); font-size: 1rem; margin-bottom: 16px; text-align: center; font-weight: 600; }
 
     .creator-tag {
-      position: absolute; bottom: 20px; font-size: 0.95rem; color: var(--gold); font-weight: 700;
+      font-size: 0.85rem; color: var(--gold); font-weight: 700;
       background: rgba(108, 63, 160, 0.4); border: 1.5px solid rgba(255, 215, 0, 0.5);
-      padding: 6px 20px; border-radius: 30px;
+      padding: 4px 16px; border-radius: 20px; margin-top: 14px;
     }
 
     .htp-step { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 12px; font-size: 0.95rem; font-weight: 600; line-height: 1.4; }
@@ -137,7 +143,7 @@
     }
 
     .result-card-epic {
-      text-align: center; padding: 22px 30px; width: min(640px, 94vw);
+      text-align: center; padding: 20px 28px; width: min(660px, 94vw);
       background: linear-gradient(145deg, rgba(20, 35, 85, 0.96), rgba(7, 13, 35, 0.98));
       border: 3.5px solid #ffd700;
       box-shadow: 0 0 60px rgba(255, 215, 0, 0.6), inset 0 0 35px rgba(0, 212, 255, 0.35);
@@ -148,7 +154,7 @@
       100% { transform: scale(1.02); box-shadow: 0 0 80px rgba(255, 215, 0, 0.85), 0 0 110px rgba(0, 212, 255, 0.5); }
     }
     .result-rank {
-      font-size: 3.8rem; font-weight: 900; font-family: var(--font-display);
+      font-size: 3.4rem; font-weight: 900; font-family: var(--font-display);
       background: linear-gradient(135deg, #fff, var(--gold), #ff7a47);
       -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
       filter: drop-shadow(0 0 25px var(--gold)); margin: 0;
@@ -161,9 +167,25 @@
 
     .stat-row {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 6px 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.05);
-      margin-bottom: 5px; font-size: 0.95rem;
+      padding: 5px 12px; border-radius: 10px; background: rgba(255, 255, 255, 0.05);
+      margin-bottom: 4px; font-size: 0.92rem;
     }
+
+    /* Modal ตารางอันดับคะแนน (Leaderboard) */
+    .lb-card {
+      background: rgba(11, 20, 53, 0.96);
+      backdrop-filter: blur(20px);
+      border: 3px solid #ffd700;
+      border-radius: 26px;
+      padding: 20px 24px;
+      width: min(580px, 94vw);
+      max-height: 88vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 0 50px rgba(255, 215, 0, 0.4);
+    }
+    .lb-list::-webkit-scrollbar { width: 6px; }
+    .lb-list::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
+    .lb-list::-webkit-scrollbar-thumb { background: #00d4ff; border-radius: 10px; }
   </style>
 </head>
 <body>
@@ -179,21 +201,67 @@
       </svg>
     </div>
 
-    <!-- 1. MAIN MENU SCREEN -->
-    <div id="menuScreen" class="screen-overlay">
+    <!-- 0. REGISTRATION SCREEN -->
+    <div id="registerScreen" class="screen-overlay">
       <div class="menu-card">
-        <div style="font-size: 4rem; animation: float 3s ease-in-out infinite;">🏹 🤖</div>
+        <div style="font-size: 2.8rem; margin-bottom: 4px;">📝 🤖</div>
+        <h2 style="font-size: 1.8rem; font-weight: 900; color: var(--gold); margin-bottom: 16px;">ลงทะเบียน</h2>
+
+        <div style="width: 100%; background: rgba(0, 0, 0, 0.4); border: 1.5px solid rgba(0, 212, 255, 0.5); border-radius: 18px; padding: 14px; margin-bottom: 16px; text-align: left;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <div>
+              <label style="font-size: 0.8rem; color: var(--gold); font-weight: bold; display: block; margin-bottom: 3px;">ห้องเรียน</label>
+              <select id="studentClass" style="width: 100%; padding: 8px 10px; border-radius: 10px; border: 1.5px solid #00d4ff; background: #0b1435; color: #fff; font-weight: bold; font-size: 0.9rem; outline: none;">
+                <option value="ม.6/1">ม.6/1</option>
+                <option value="ม.6/2">ม.6/2</option>
+                <option value="ม.6/3">ม.6/3</option>
+                <option value="ม.6/4">ม.6/4</option>
+                <option value="ม.6/5">ม.6/5</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 0.8rem; color: var(--gold); font-weight: bold; display: block; margin-bottom: 3px;">เลขที่</label>
+              <input type="number" id="studentNo" min="1" max="50" placeholder="เลขที่" style="width: 100%; padding: 8px 10px; border-radius: 10px; border: 1.5px solid #00d4ff; background: #0b1435; color: #fff; font-weight: bold; font-size: 0.9rem; text-align: center; outline: none;">
+            </div>
+          </div>
+          <div>
+            <label style="font-size: 0.8rem; color: var(--gold); font-weight: bold; display: block; margin-bottom: 3px;">ชื่อ - นามสกุล</label>
+            <input type="text" id="playerName" placeholder="พิมพ์ชื่อ-นามสกุล..." style="width: 100%; padding: 8px 12px; border-radius: 10px; border: 1.5px solid #00d4ff; background: #0b1435; color: #fff; font-weight: bold; font-size: 0.9rem; text-align: center; outline: none;">
+          </div>
+        </div>
+
+        <button class="btn btn-green" id="btnConfirmRegister" style="width: 100%;">
+          ✅ เข้าสู่หน้าเมนูเกม
+        </button>
+
+        <div class="creator-tag">By นายพิรสิฏฐ์ พีรภัคโสภณ</div>
+      </div>
+    </div>
+
+    <!-- 1. MAIN MENU SCREEN -->
+    <div id="menuScreen" class="screen-overlay hidden">
+      <div class="menu-card">
+        <div style="font-size: 3rem; animation: float 3s ease-in-out infinite;">🏹 🤖</div>
         <h1 class="game-title">AI Tech Match</h1>
         <p class="game-subtitle">ภารกิจยิงธนูจำแนก "AI ในชีวิตประจำวัน"</p>
 
-        <div style="display:flex; flex-direction:column; gap:16px; width:min(380px, 85vw);">
-          <button class="btn btn-gold hand-interact" id="btnStartGame">🎯 เริ่มเล่นเกม</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; background: rgba(0, 212, 255, 0.15); border: 1.5px solid rgba(0, 212, 255, 0.5); border-radius: 16px; padding: 8px 14px; margin-bottom: 14px;">
+          <div style="font-size: 0.9rem; font-weight: bold; color: var(--neon-green); text-align: left;">
+            👤 <span id="currentProfileText">ม.6/1 เลขที่ 1 นักเรียน</span>
+          </div>
+          <button id="btnChangeUser" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 8px; color: #ffd700; font-size: 0.75rem; font-weight: bold; padding: 4px 8px; cursor: pointer;">
+            เปลี่ยนชื่อ
+          </button>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:12px; width:100%;">
+          <button class="btn btn-gold hand-interact" id="btnStartGame">🎯 เริ่มเล่นเกม (AR ยิงธนู)</button>
           <button class="btn btn-primary hand-interact" id="btnMousePlay">🖱️ เล่นด้วยเมาส์</button>
           <button class="btn btn-secondary hand-interact" id="btnHowToPlay">📖 วิธีการเล่น</button>
         </div>
-      </div>
 
-      <div class="creator-tag">By นายพิรสิฏฐ์ พีรภัคโสภณ</div>
+        <div class="creator-tag">By นายพิรสิฏฐ์ พีรภัคโสภณ</div>
+      </div>
     </div>
 
     <!-- 2. HOW TO PLAY & PRACTICE TARGET MODAL -->
@@ -225,16 +293,18 @@
     <!-- 3. EPIC RESULT OVERLAY -->
     <div id="resultOverlay" class="screen-overlay hidden">
       <div id="captureArea" class="glass-card result-card-epic">
-        <div style="font-size: 2rem;">👑 🏆 🎊</div>
-        <h2 style="color:var(--gold); font-size:1.45rem; font-weight:900; text-shadow:0 0 20px rgba(255,215,0,0.6);">
+        <div style="font-size: 1.8rem;">👑 🏆 🎊</div>
+        <h2 style="color:var(--gold); font-size:1.35rem; font-weight:900; text-shadow:0 0 20px rgba(255,215,0,0.6);">
           สรุปผลการทดสอบ AI Tech Match
         </h2>
+        
+        <div style="font-size: 0.95rem; font-weight: bold; color: var(--neon-green); margin: 2px 0;" id="resStudentInfo"></div>
         <div class="result-rank" id="resultRank">S</div>
 
-        <div style="background:rgba(0,0,0,0.45); border:1.5px solid rgba(255,215,0,0.3); border-radius:18px; padding:10px 14px; margin:6px 0; text-align:left;">
+        <div style="background:rgba(0,0,0,0.45); border:1.5px solid rgba(255,215,0,0.3); border-radius:16px; padding:8px 12px; margin:4px 0; text-align:left;">
           <div class="stat-row" style="background:rgba(0,255,136,0.15); border-left:5px solid var(--neon-green);">
             <span style="font-weight:bold; color:#fff;">คะแนนรวมสุทธิ:</span>
-            <span style="font-size:1.25rem; font-weight:900; color:var(--neon-green);" id="resScore">0 / 1000</span>
+            <span style="font-size:1.2rem; font-weight:900; color:var(--neon-green);" id="resScore">0 / 1000</span>
           </div>
           <div class="stat-row">
             <span style="color:var(--white-dim);">🎯 อัตราการตอบถูก:</span>
@@ -256,20 +326,17 @@
             <span style="color:var(--white-dim);">⏱️ เวลารวมที่ใช้จริง:</span>
             <span style="font-weight:bold; color:#ff7a47;" id="resTotalTime">0.0 วินาที</span>
           </div>
-          <div class="stat-row">
-            <span style="color:var(--white-dim);">📊 ความเร็วเฉลี่ย:</span>
-            <span style="font-weight:bold; color:var(--white);" id="resAvgTime">0.0 วิ / ข้อ</span>
-          </div>
         </div>
 
-        <!-- แถบระบุวันที่และผู้จัดทำ -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin:4px 0 8px; font-size:0.82rem; color:var(--white-dim); padding:0 6px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin:3px 0 6px; font-size:0.8rem; color:var(--white-dim); padding:0 6px;">
           <span>📅 วันที่: <b id="resDateTime" style="color:var(--gold);">-</b></span>
           <span style="color:var(--gold); font-weight:700;">By นายพิรสิฏฐ์ พีรภัคโสภณ</span>
         </div>
 
-        <!-- แถบปุ่มควบคุมในหน้าสรุปผล -->
-        <div style="display:flex; justify-content:center; gap:8px; margin-top:4px; flex-wrap:wrap;" data-html2canvas-ignore="true">
+        <div style="display:flex; justify-content:center; gap:6px; margin-top:4px; flex-wrap:wrap;" data-html2canvas-ignore="true">
+          <button class="btn btn-purple btn-sm hand-interact" id="btnShowLeaderboard">
+            🏆 ดูอันดับคะแนน
+          </button>
           <button class="btn btn-green btn-sm hand-interact" id="btnCaptureScore">
             📸 บันทึกภาพคะแนน
           </button>
@@ -282,9 +349,49 @@
         </div>
       </div>
     </div>
+
+    <!-- 4. LEADERBOARD MODAL (Top 10 + ย่นอันดับ) -->
+    <div id="leaderboardModal" class="screen-overlay hidden">
+      <div class="lb-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid rgba(255, 215, 0, 0.4); padding-bottom: 6px; margin-bottom: 10px;">
+          <h2 style="color:var(--gold); font-size:1.3rem; font-weight:900; display:flex; align-items:center; gap:6px;">
+            <span>🏆 ตารางอันดับคะแนน (Top 10)</span>
+          </h2>
+          <span style="font-size:0.72rem; color:var(--neon-green); font-weight:bold; background:rgba(0,255,136,0.15); border:1px solid var(--neon-green); padding:2px 8px; border-radius:12px;">
+            🟢 Realtime Online
+          </span>
+        </div>
+
+        <div id="leaderboardList" class="lb-list" style="flex:1; overflow-y:auto; max-height:50vh; display:flex; flex-direction:column; gap:5px; padding-right:4px;">
+          <div style="text-align:center; padding:20px; color:var(--white-dim); font-size:0.9rem;">
+            ⏳ กำลังโหลดข้อมูลอันดับคะแนน...
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:center; margin-top:12px;">
+          <button class="btn btn-gold btn-sm hand-interact" id="btnCloseLeaderboard" style="width:100%; max-width:220px;">
+            ⬅️ ปิดหน้าต่าง
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
+    /* ==========================================================
+       0. FIREBASE REALTIME DATABASE SETUP
+       ========================================================== */
+    const firebaseConfig = {
+      databaseURL: "https://ai-tech-match-default-rtdb.asia-southeast1.firebasedatabase.app"
+    };
+    let db = null;
+    let isFirebaseActive = false;
+    try {
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+      isFirebaseActive = true;
+    } catch(e) { console.warn("Firebase Init Warning:", e); }
+
     /* ==========================================================
        1. QUESTION BANK: 10 สถานการณ์
        ========================================================== */
@@ -372,7 +479,7 @@
     ];
 
     /* ==========================================================
-       2. AUDIO & SPEECH ENGINE
+       2. AUDIO ENGINE
        ========================================================== */
     class AudioEngine {
       constructor() {
@@ -382,9 +489,7 @@
 
       init() {
         try {
-          if (!this.ctx) {
-            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-          }
+          if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
           if (this.ctx.state === 'suspended') this.ctx.resume();
         } catch(e){}
       }
@@ -519,7 +624,7 @@
         this.mouseMode = false;
         this.mouse = { x: 0, y: 0, down: false };
 
-        this.state = 'MENU';
+        this.state = 'REGISTER';
         this.questions = [];
         this.qIndex = 0;
         this.score = 0;
@@ -528,6 +633,12 @@
         this.combo = 0;
         this.shotsFired = 0;
         this.shotsHit = 0;
+
+        this.studentClass = "ม.6/1";
+        this.studentNo = "1";
+        this.playerName = "";
+        this.lastRegisteredKey = null; // คีย์อ้างอิงรอบเล่นล่าสุด
+        this.studentItemResponses = {};
 
         this.maxTime = 15;
         this.timeLeft = 15;
@@ -571,6 +682,7 @@
         window.addEventListener('resize', () => this.resize());
         this.bindDOM();
         this.initCameraSystem();
+        this.listenLeaderboardRealtime();
       }
 
       resize() {
@@ -587,6 +699,25 @@
       }
 
       bindDOM() {
+        document.getElementById('btnConfirmRegister').onclick = () => {
+          audio.init();
+          const pName = document.getElementById('playerName').value.trim();
+          if (!pName) {
+            alert("กรุณากรอกชื่อ-นามสกุลก่อนเข้าสู่เกมครับ");
+            return;
+          }
+          this.studentClass = document.getElementById('studentClass').value;
+          this.studentNo = document.getElementById('studentNo').value.trim() || "0";
+          this.playerName = pName;
+          
+          document.getElementById('currentProfileText').innerText = `${this.studentClass} เลขที่ ${this.studentNo} ${this.playerName}`;
+          this.openMainMenu();
+        };
+
+        document.getElementById('btnChangeUser').onclick = () => {
+          this.openRegisterScreen();
+        };
+
         document.getElementById('btnStartGame').onclick = () => {
           this.mouseMode = false;
           this.startRound();
@@ -610,6 +741,13 @@
         };
         document.getElementById('btnResultToHome').onclick = () => {
           this.openMainMenu();
+        };
+
+        document.getElementById('btnShowLeaderboard').onclick = () => {
+          this.openLeaderboardModal();
+        };
+        document.getElementById('btnCloseLeaderboard').onclick = () => {
+          this.closeLeaderboardModal();
         };
 
         document.getElementById('btnCaptureScore').onclick = () => {
@@ -636,12 +774,38 @@
         });
       }
 
+      openRegisterScreen() {
+        this.state = 'REGISTER';
+        document.getElementById('registerScreen').classList.remove('hidden');
+        document.getElementById('menuScreen').classList.add('hidden');
+        document.getElementById('howToPlayModal').classList.add('hidden');
+        document.getElementById('resultOverlay').classList.add('hidden');
+        document.getElementById('leaderboardModal').classList.add('hidden');
+        this.pointerEl.style.display = 'none';
+        this.resetHover();
+      }
+
+      openMainMenu() {
+        this.state = 'MENU';
+        document.getElementById('registerScreen').classList.add('hidden');
+        document.getElementById('menuScreen').classList.remove('hidden');
+        document.getElementById('howToPlayModal').classList.add('hidden');
+        document.getElementById('resultOverlay').classList.add('hidden');
+        document.getElementById('leaderboardModal').classList.add('hidden');
+        audio.stopSpeech();
+        clearInterval(this.timerInterval);
+        this.arrow.flying = false;
+        this.resetHover();
+      }
+
       openHowToPlayPractice() {
         audio.init();
         this.state = 'HOWTOPLAY';
+        document.getElementById('registerScreen').classList.add('hidden');
         document.getElementById('menuScreen').classList.add('hidden');
         document.getElementById('howToPlayModal').classList.remove('hidden');
         document.getElementById('resultOverlay').classList.add('hidden');
+        document.getElementById('leaderboardModal').classList.add('hidden');
         this.pointerEl.style.display = 'none';
         this.resetHover();
         this.bowState = 'IDLE';
@@ -652,16 +816,123 @@
         this.statusText = 'ยก 1 มือเพื่อชี้เมนู หรือยก 2 มือเพื่อซ้อมยิงธนู';
       }
 
-      openMainMenu() {
-        this.state = 'MENU';
-        document.getElementById('menuScreen').classList.remove('hidden');
-        document.getElementById('howToPlayModal').classList.add('hidden');
-        document.getElementById('resultOverlay').classList.add('hidden');
-        audio.stopSpeech();
-        clearInterval(this.timerInterval);
-        this.arrow.flying = false;
-        this.pointerEl.style.display = 'none';
+      openLeaderboardModal() {
+        audio.init();
+        this.state = 'LEADERBOARD';
+        document.getElementById('leaderboardModal').classList.remove('hidden');
         this.resetHover();
+      }
+
+      closeLeaderboardModal() {
+        this.state = 'RESULT';
+        document.getElementById('leaderboardModal').classList.add('hidden');
+        this.resetHover();
+      }
+
+      listenLeaderboardRealtime() {
+        if (isFirebaseActive && db) {
+          // ดึงข้อมูลทั้งหมดมาจัดอันดับ Top 10 + ย่นอันดับ
+          db.ref('student_results').on('value', (snapshot) => {
+            const raw = snapshot.val();
+            let board = [];
+            if (raw) {
+              Object.keys(raw).forEach(k => {
+                const item = raw[k];
+                item._key = k;
+                board.push(item);
+              });
+              // เรียงจากคะแนนมากไปน้อย ถ้าเท่ากันดูเวลาที่น้อยกว่า
+              board.sort((a, b) => {
+                if ((b.score || 0) !== (a.score || 0)) {
+                  return (b.score || 0) - (a.score || 0);
+                }
+                return (a.totalTime || 999) - (b.totalTime || 999);
+              });
+            }
+            this.renderLeaderboardUI(board);
+          });
+        }
+      }
+
+      renderLeaderboardUI(board) {
+        const container = document.getElementById('leaderboardList');
+        if (!container) return;
+
+        if (!board || board.length === 0) {
+          container.innerHTML = `<div style="text-align:center; padding:20px; color:var(--white-dim);">ยังไม่มีข้อมูลคะแนนในระบบ</div>`;
+          return;
+        }
+
+        container.innerHTML = '';
+
+        // 1. หาตำแหน่งอันดับของผู้เล่นคนปัจจุบัน
+        let myOverallRank = -1;
+        let myBestEntry = null;
+
+        board.forEach((item, idx) => {
+          const isMe = (this.lastRegisteredKey && item._key === this.lastRegisteredKey) ||
+                       (!this.lastRegisteredKey && item.name === this.playerName && item.studentClass === this.studentClass && item.studentNo === this.studentNo);
+          if (isMe && myOverallRank === -1) {
+            myOverallRank = idx + 1;
+            myBestEntry = item;
+          }
+        });
+
+        // 2. แสดง Top 10
+        const top10 = board.slice(0, 10);
+        let isMeInTop10 = false;
+
+        top10.forEach((item, idx) => {
+          const rankNum = idx + 1;
+          const isCurrentPlayer = (myBestEntry && item._key === myBestEntry._key);
+          if (isCurrentPlayer) isMeInTop10 = true;
+
+          container.appendChild(this.createLeaderboardRowElement(item, rankNum, isCurrentPlayer));
+        });
+
+        // 3. หากผู้เล่นอยู่นอก Top 10 ให้แสดงการย่นอันดับ (•••) และแสดงแถวของผู้เล่นด้านล่าง
+        if (!isMeInTop10 && myBestEntry && myOverallRank > 10) {
+          const divider = document.createElement('div');
+          divider.style.cssText = `text-align:center; color:var(--gold); font-weight:900; font-size:1.1rem; letter-spacing: 4px; padding: 2px 0;`;
+          divider.innerText = `• • •`;
+          container.appendChild(divider);
+
+          container.appendChild(this.createLeaderboardRowElement(myBestEntry, myOverallRank, true));
+        }
+      }
+
+      createLeaderboardRowElement(item, rankNum, isHighlight) {
+        const row = document.createElement('div');
+        
+        let rankColor = 'rgba(255, 255, 255, 0.08)';
+        let badgeText = `#${rankNum}`;
+        let borderStyle = '1px solid rgba(255,255,255,0.15)';
+
+        if (rankNum === 1) { rankColor = 'rgba(255, 215, 0, 0.28)'; badgeText = '🥇 #1'; }
+        else if (rankNum === 2) { rankColor = 'rgba(192, 192, 192, 0.25)'; badgeText = '🥈 #2'; }
+        else if (rankNum === 3) { rankColor = 'rgba(205, 127, 50, 0.25)'; badgeText = '🥉 #3'; }
+
+        if (isHighlight) {
+          rankColor = 'rgba(0, 212, 255, 0.28)';
+          borderStyle = '2px solid #00d4ff';
+        }
+
+        row.style.cssText = `display:flex; justify-content:space-between; align-items:center; background:${rankColor}; border:${borderStyle}; border-radius:12px; padding:6px 12px; font-size:0.86rem; transition: transform 0.15s ease;`;
+
+        row.innerHTML = `
+          <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
+            <span style="font-weight:900; color:var(--gold); font-size:0.95rem; min-width:34px;">${badgeText}</span>
+            <span style="font-weight:bold; color:#fff;">${item.studentClass} เลขที่ ${item.studentNo}</span>
+            <span style="color:var(--white-dim); max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+              ${item.name} ${isHighlight ? '<b style="color:#00d4ff;">(คุณ)</b>' : ''}
+            </span>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:0.75rem; color:#a5f3fc; font-weight:bold; background:rgba(0,0,0,0.3); padding:2px 6px; border-radius:6px;">${item.rank || '-'}</span>
+            <span style="font-weight:900; color:var(--neon-green); font-size:0.95rem;">${item.score || 0}</span>
+          </div>
+        `;
+        return row;
       }
 
       captureScoreCard() {
@@ -680,7 +951,7 @@
           const imageURL = canvas.toDataURL('image/png');
           const link = document.createElement('a');
           link.href = imageURL;
-          link.download = `AI-Tech-Match-Score-${Date.now()}.png`;
+          link.download = `AI-Tech-Match-${this.studentClass}-${this.studentNo}-${Date.now()}.png`;
           link.click();
           btn.innerText = "✅ บันทึกสำเร็จแล้ว!";
           setTimeout(() => { btn.innerText = origText; }, 2500);
@@ -719,9 +990,11 @@
 
       startRound() {
         audio.init();
+        document.getElementById('registerScreen').classList.add('hidden');
         document.getElementById('menuScreen').classList.add('hidden');
         document.getElementById('howToPlayModal').classList.add('hidden');
         document.getElementById('resultOverlay').classList.add('hidden');
+        document.getElementById('leaderboardModal').classList.add('hidden');
         this.pointerEl.style.display = 'none';
         this.resetHover();
 
@@ -737,6 +1010,7 @@
         this.totalTimeSpent = 0;
         this.bossMaxHP = 1000;
         this.bossHP = 1000;
+        this.studentItemResponses = {};
         this.bowState = 'EQUIPPED';
         this.wasDrawing = false;
         this.isTransitioning = false;
@@ -760,11 +1034,12 @@
 
         const isCorrectTop = Math.random() > 0.5;
         const currentChoices = isCorrectTop 
-          ? [ { text: q.correctText, isCorrect: true }, { text: q.wrongText, isCorrect: false } ]
-          : [ { text: q.wrongText, isCorrect: false }, { text: q.correctText, isCorrect: true } ];
+          ? [ { text: q.correctText, isCorrect: true, qId: q.id }, { text: q.wrongText, isCorrect: false, qId: q.id } ]
+          : [ { text: q.wrongText, isCorrect: false, qId: q.id }, { text: q.correctText, isCorrect: true, qId: q.id } ];
 
         this.targets = currentChoices.map((item, idx) => ({
           idx,
+          qId: item.qId,
           text: item.text,
           isCorrect: item.isCorrect,
           x: startX,
@@ -798,6 +1073,10 @@
         audio.stopSpeech();
         this.combo = 0;
         audio.playWrongHit();
+        
+        const currentQ = this.questions[this.qIndex];
+        this.studentItemResponses[`q_${currentQ.id}`] = 0;
+
         this.targets.forEach(t => { if (t.isCorrect) t.state = 'correct'; });
         
         setTimeout(() => {
@@ -812,17 +1091,14 @@
         this.currentHandLandmarks = results.multiHandLandmarks || [];
         const numHands = this.currentHandLandmarks.length;
 
-        // ==========================================
-        // 1. ตรวจจับสำหรับหน้า MENU และ RESULT
-        // ==========================================
-        if (this.state === 'MENU' || this.state === 'RESULT') {
+        // 1. ตรวจจับสำหรับหน้า MENU, RESULT และ LEADERBOARD (ชี้นิ้ว 100%)
+        if (this.state === 'MENU' || this.state === 'RESULT' || this.state === 'LEADERBOARD') {
           if (numHands > 0) {
             const lm = this.currentHandLandmarks[0];
             const indexTip = lm[8];
 
-            // ปรับ Scale ให้กวาดถึงขอบล่างของจอได้ง่ายขึ้นโดยมือไม่ต้องหลุดกล้อง
             const normalizedX = (1 - indexTip.x);
-            const normalizedY = (indexTip.y - 0.1) / 0.82; // ขยายช่วง Y ให้อยู่ในช่วง 10%-92% ของเฟรมกล้อง
+            const normalizedY = (indexTip.y - 0.1) / 0.82;
 
             const screenX = Math.max(10, Math.min(window.innerWidth - 10, normalizedX * window.innerWidth));
             const screenY = Math.max(10, Math.min(window.innerHeight - 10, normalizedY * window.innerHeight));
@@ -837,9 +1113,7 @@
           return;
         }
 
-        // ==========================================
         // 2. ตรวจจับสำหรับหน้า HOWTOPLAY
-        // ==========================================
         if (this.state === 'HOWTOPLAY') {
           if (numHands === 0) {
             this.pointerEl.style.display = 'none';
@@ -922,9 +1196,7 @@
           }
         }
 
-        // ==========================================
         // 3. ตรวจจับสำหรับหน้า PLAYING
-        // ==========================================
         if (this.state === 'PLAYING') {
           this.pointerEl.style.display = 'none';
           this.resetHover();
@@ -1210,6 +1482,8 @@
         clearInterval(this.timerInterval);
         audio.stopSpeech();
 
+        this.studentItemResponses[`q_${target.qId}`] = target.isCorrect ? 1 : 0;
+
         if (target.isCorrect) {
           this.shotsHit++;
           this.combo++;
@@ -1257,6 +1531,8 @@
         audio.playVictoryFanfare();
 
         try {
+          document.getElementById('resStudentInfo').innerText = `ผู้ทดสอบ: ${this.studentClass} เลขที่ ${this.studentNo} ${this.playerName}`;
+
           const correctRate = Math.round((this.shotsHit / this.questions.length) * 100);
           document.getElementById('resCorrectRate').innerText = `${correctRate}% (${this.shotsHit}/${this.questions.length} ข้อ)`;
 
@@ -1268,7 +1544,6 @@
           document.getElementById('resBaseScore').innerText = `${this.baseScore} / 500`;
           document.getElementById('resSpeedScore').innerText = `${this.speedScore} / 500`;
           document.getElementById('resTotalTime').innerText = `${this.totalTimeSpent.toFixed(1)} วินาที`;
-          document.getElementById('resAvgTime').innerText = `${(this.totalTimeSpent / this.questions.length).toFixed(1)} วิ / ข้อ`;
 
           const now = new Date();
           const dateStr = now.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -1281,6 +1556,8 @@
           else if (this.score >= 600) rank = 'B';
           else rank = 'C';
           document.getElementById('resultRank').innerText = rank;
+
+          this.saveScoreToFirebase(rank);
         } catch(e) {
           console.error("DOM Update Error:", e);
         }
@@ -1308,6 +1585,35 @@
         }, 500);
       }
 
+      saveScoreToFirebase(rank) {
+        const payload = {
+          studentClass: this.studentClass,
+          studentNo: this.studentNo,
+          name: this.playerName,
+          score: this.score,
+          correctCount: this.shotsHit,
+          accuracy: Math.round((this.shotsHit / Math.max(1, this.shotsFired)) * 100),
+          totalTime: parseFloat(this.totalTimeSpent.toFixed(1)),
+          rank: rank,
+          itemResponses: this.studentItemResponses,
+          timestamp: Date.now()
+        };
+
+        if (isFirebaseActive && db) {
+          const newRef = db.ref('student_results').push();
+          this.lastRegisteredKey = newRef.key;
+          newRef.set(payload)
+            .then(() => console.log("Firebase sync successful! Key:", this.lastRegisteredKey))
+            .catch(err => console.warn("Firebase sync error:", err));
+        }
+
+        try {
+          let board = JSON.parse(localStorage.getItem('ai_tech_match_results') || '[]');
+          board.push(payload);
+          localStorage.setItem('ai_tech_match_results', JSON.stringify(board));
+        } catch(e){}
+      }
+
       render() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -1325,7 +1631,7 @@
           this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         }
 
-        if (!this.mouseMode && (this.state === 'MENU' || this.state === 'RESULT' || this.state === 'HOWTOPLAY') && this.currentHandLandmarks.length > 0) {
+        if (!this.mouseMode && (this.state === 'MENU' || this.state === 'RESULT' || this.state === 'HOWTOPLAY' || this.state === 'LEADERBOARD') && this.currentHandLandmarks.length > 0) {
           this.drawHandSkeletons(this.ctx, this.currentHandLandmarks, this.canvas.width, this.canvas.height);
         }
 
